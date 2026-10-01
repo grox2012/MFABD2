@@ -179,6 +179,24 @@
             }
         }
     },
+    "Setup_ResetLoc_JumpBackUse_Mod": {
+        "roi": [
+            452,
+            638,
+            378,
+            40
+        ],
+        "expected": [
+            "卢戈镇",
+            "盧戈鎮"
+        ],
+        "target": [
+            1026,
+            345,
+            3,
+            3
+        ]
+    },
     "Setup_Main_Into": {
         "target": [
             1172,
