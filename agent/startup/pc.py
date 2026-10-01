@@ -204,6 +204,27 @@ def settle_after_launch(api, hwnd, budget):
     return True
 
 
+def clear_residue(api, windows, budget):
+    """连接前清除上次会话遗留的伪最小化（透明 + 点击穿透）。
+
+    框架在截图控制器创建时保存窗口的「原始状态」，此后每次恢复都写回它。窗口若
+    带着遗留连接，透明就被存成原始状态：窗口不是 iconic，框架不会再施加伪最小化，
+    也就永远不会恢复，用户点激活也无效。pretask 跑在控制器创建之前（MFAA 的
+    InitializeMaaTasker 先执行 pretask 再建控制器），是唯一能让它存下干净状态的时机。
+
+    尽力而为：失败只报告，窗口照常交给软件连接。
+    """
+    for hwnd in windows:
+        try:
+            if not api.pseudo_minimized(hwnd):
+                continue
+            api.clear_pseudo_minimize(hwnd)
+            budget.report("[启动准备] 游戏窗口带着上次遗留的透明与点击穿透，已在连接前清除")
+        except Exception as exc:
+            reason = str(exc) or type(exc).__name__
+            budget.warn(f"[启动准备] 清除遗留的透明与点击穿透失败（{reason}）；继续启动，窗口可能保持透明")
+
+
 def launch_and_confirm(api, budget):
     """pretask 路径：游戏没跑就拉起官方启动器，等到主窗口出现并确认它存在。
 
@@ -225,6 +246,7 @@ def launch_and_confirm(api, budget):
             # 多窗口交给软件自己的窗口选择，这里只报数不拦——pretask 没资格替用户决定。
             extra = f"（检测到 {len(windows)} 个，由软件选择连接目标）" if len(windows) > 1 else ""
             budget.report(f"[启动准备] 已确认游戏主窗口{extra}；窗口尺寸与最小化在任务开始时处理")
+            clear_residue(api, windows, budget)
             # 游戏本来就在跑时窗口早已稳定，不花这段等待。
             if not launched:
                 return Prepared(launched)

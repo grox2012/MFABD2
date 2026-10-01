@@ -44,6 +44,7 @@ class WindowsAPI:
             (self.user, "SetWindowPos", W.BOOL, [W.HWND, W.HWND, C.c_int, C.c_int, C.c_int, C.c_int, W.UINT]),
             (self.user, "PostMessageW", W.BOOL, [W.HWND, W.UINT, W.WPARAM, W.LPARAM]),
             (self.user, "GetWindowLongW", W.LONG, [W.HWND, C.c_int]),
+            (self.user, "SetWindowLongW", W.LONG, [W.HWND, C.c_int, W.LONG]),
             (self.user, "GetLayeredWindowAttributes", W.BOOL, [W.HWND, C.POINTER(W.DWORD), C.POINTER(W.BYTE), C.POINTER(W.DWORD)]),
             (self.user, "SetThreadDpiAwarenessContext", W.HANDLE, [W.HANDLE]),
             (self.kernel, "OpenProcess", W.HANDLE, [W.DWORD, W.BOOL, W.DWORD]),
@@ -197,6 +198,17 @@ class WindowsAPI:
         color, alpha, flags = W.DWORD(), W.BYTE(), W.DWORD()
         return bool(self.user.GetLayeredWindowAttributes(hwnd, C.byref(color), C.byref(alpha), C.byref(flags))
                     and flags.value & 2 and alpha.value == 0)
+
+    def clear_pseudo_minimize(self, hwnd):
+        # 只在控制器连接前调用：此时没有截图控制器持有这个窗口，透明状态只可能是
+        # 上次会话的遗留。连接后再改会与框架保存的原始状态相互覆盖，见 restore()。
+        # 去掉 WS_EX_LAYERED 时系统一并丢弃 alpha，不必再写 SetLayeredWindowAttributes。
+        style = self.user.GetWindowLongW(hwnd, -20)
+        C.set_last_error(0)
+        if not self.user.SetWindowLongW(hwnd, -20, style & ~0x80020) and C.get_last_error():
+            raise C.WinError(C.get_last_error())
+        if self.user.GetWindowLongW(hwnd, -20) & 0x80020:
+            raise PreparationError("写入后窗口仍带透明或点击穿透样式")
 
     def minimize(self, hwnd):
         if not self.user.IsWindow(hwnd):
