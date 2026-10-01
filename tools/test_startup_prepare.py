@@ -430,6 +430,50 @@ class PCTests(ContractTest):
         self.assertEqual((api.launches, api.resizes, api.handles), (0, 0, []))
         self.assertIn("2 个", self.messages[-1])
 
+    def residue_api(self, frames=None, residue=(7,)):
+        api = NativeAPI(frames)
+        api.residue = set(residue)
+        api.cleared = []
+        api.pseudo_minimized = lambda hwnd: hwnd in api.residue
+        def clear(hwnd):
+            api.cleared.append(hwnd)
+            api.residue.discard(hwnd)
+        api.clear_pseudo_minimize = clear
+        return api
+
+    def test_residue_is_cleared_before_connection(self):
+        api = self.residue_api()
+        self.assertIsNotNone(pc.prepare(api, self.budget()))
+        self.assertEqual((api.cleared, api.launches), ([7], 0))
+        self.assertIn("已在连接前清除", self.messages[-1])
+
+    def test_every_candidate_window_is_checked_for_residue(self):
+        api = self.residue_api([([7, 8], True, [])], residue=(8,))
+        pc.prepare(api, self.budget())
+        self.assertEqual(api.cleared, [8])
+
+    def test_clean_window_is_left_alone(self):
+        api = self.residue_api(residue=())
+        pc.prepare(api, self.budget())
+        self.assertEqual(api.cleared, [])
+        self.assertFalse(any("透明" in text for text in self.messages))
+
+    def test_residue_cleanup_failure_does_not_block_startup(self):
+        api = self.residue_api()
+        def fail(hwnd):
+            raise PreparationError("写入后窗口仍带透明或点击穿透样式")
+        api.clear_pseudo_minimize = fail
+        self.assertIsNotNone(pc.prepare(api, self.budget()))
+        self.assertIn("清除遗留的透明与点击穿透失败", self.messages[-1])
+
+    def test_residue_cleanup_does_not_swallow_cancellation(self):
+        api = self.residue_api()
+        def interrupt(hwnd):
+            raise KeyboardInterrupt
+        api.clear_pseudo_minimize = interrupt
+        with self.assertRaises(KeyboardInterrupt):
+            pc.prepare(api, self.budget())
+
     def test_invalid_bound_handle_never_rebinds(self):
         api = NativeAPI([([8], True, [])], valid=False)
         with self.assertRaises(PreparationError):
