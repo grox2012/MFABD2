@@ -129,6 +129,7 @@
         "next": [
             "Global_ToHomePage_Enter",
             "Global_ToHomePage_HomeButton",
+            "Global_ToHomePage_VictoryReturn",
             "[JumpBack]StartGame_7dAD_Check",
             "Global_ToHomePage_Reset"
         ],
@@ -166,6 +167,30 @@
             "[JumpBack]Global_BackPageHub_Once"
         ],
         "focus": "G.箱庭地图已确认"
+    },
+    "Global_ToHomePage_VictoryReturn": {
+        "desc": "[通用复位]战斗胜利结算屏,右下角有返回按钮,点击返回退出结算",
+        "recognition": "OCR",
+        "roi": [
+            1200,
+            940,
+            220,
+            80
+        ],
+        "expected": [
+            "返回"
+        ],
+        "action": "Click",
+        "target": [
+            1260,
+            974
+        ],
+        "post_delay": 3000,
+        "next": [
+            "Global_ToHomePage_Enter",
+            "Global_ToHomePage"
+        ],
+        "focus": "GO.胜利结算-点击返回"
     },
     "Global_ToHomePage_Reset": {
         "desc": "其他页面，返回按钮",
