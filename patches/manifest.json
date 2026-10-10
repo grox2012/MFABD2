@@ -1,0 +1,166 @@
+{
+  "schema": 1,
+  "about": "MFABD2 本机补丁清单（机器可读）。补丁不住在部署目录里：本目录（fork 仓库 patches/）是唯一事实源，apply_patches.py 按锚点把补丁重打到任意一份资源树（仓库源码或已安装的发布包）。版本更新后先跑 --check 再 --apply，详见 PATCH_MAINTENANCE.md。",
+  "resource_subdir": "resource/base/pipeline",
+  "source_subdir": "assets/resource/base/pipeline",
+  "patches": [
+    {
+      "id": "pass-enter-wait",
+      "title": "通行证进页等待：Pass_EnterPass 加 timeout 90000",
+      "kind": "shared-fix",
+      "status": "active",
+      "introduced": "2026-10-10",
+      "issue": "https://github.com/sunyink/MFABD2/issues/544",
+      "intent": "Pass_EnterPass 原无显式 timeout，通行证页加载慢（实测 15 秒+）时等待耗尽走 on_error 链，任务 15 秒假绿、领取零执行。加 90 秒等待让页面真正加载；仍进不去则落入既有 Global_Null_Panic 链显性失败。",
+      "files": [
+        "Pass.json"
+      ],
+      "applied_markers": [
+        {
+          "file": "Pass.json",
+          "node": "Pass_EnterPass",
+          "contains": "\"timeout\": 90000"
+        }
+      ],
+      "edits": [
+        {
+          "file": "Pass.json",
+          "type": "replace",
+          "count": 1,
+          "anchor": "        \"expected\": \"通行证\",\n        \"next\": [\n            \"Pass_SelectPass\",",
+          "replacement": "        \"expected\": \"通行证\",\n        \"timeout\": 90000,\n        \"next\": [\n            \"Pass_SelectPass\","
+        }
+      ],
+      "verify": "单跑 [领取]通行证奖励：须真实进入通行证页（focus 出现 PM.通行证页面确认→选择通行证→点击领取链），耗时明显超过旧版 15 秒假绿；或在每日正式运行中观察同一签名。",
+      "retire_when": "上游 Pass_EnterPass 自带足够长的显式等待（>=60000）或等效的进页校验，且实机验证通过。"
+    },
+    {
+      "id": "quickhunt-locked-stage-fail",
+      "title": "快速狩猎未解锁关卡显性失败：新增 QuickHunt_LockedStage_Panic",
+      "kind": "shared-fix",
+      "status": "active",
+      "introduced": "2026-10-10",
+      "issue": "https://github.com/sunyink/MFABD2/issues/544",
+      "intent": "所选关卡首领未打时右下按钮是「难度挑战」而非「快速狩猎」，stock 链路全部落空却以成功收场（米饭不动、对话框前空转）。新节点与 QuickHunt_QuickBattleButton 共用按钮 roi [1029,632,89,33]，OCR 到「难度挑战」即 StopTask 并打红色 focus；挂在狩猎场 1/7/9 选关、圣石洞穴 CkDone、冒险航线 DoubleCk1/2 与 RiceRecheck_DoubleCk 的 next 首位。",
+      "files": [
+        "Battle.json"
+      ],
+      "applied_markers": [
+        {
+          "file": "Battle.json",
+          "contains": "\"QuickHunt_LockedStage_Panic\": {"
+        },
+        {
+          "file": "Battle.json",
+          "node": "QuickHunt_CollectMapHuntingGrounds_7",
+          "contains": "\"QuickHunt_LockedStage_Panic\""
+        }
+      ],
+      "edits": [
+        {
+          "file": "Battle.json",
+          "type": "replace",
+          "count": 1,
+          "anchor": "    \"QuickHunt_QuickBattleButton\": {",
+          "replacement": "    \"QuickHunt_LockedStage_Panic\": {\n        \"desc\": \"[本地补丁] 所选关卡未解锁时右下按钮为「难度挑战」而非「快速狩猎」，命中即显性失败，禁止假成功；解锁由每日阶段四按规程处理。见 patches/manifest.json#quickhunt-locked-stage-fail\",\n        \"recognition\": \"OCR\",\n        \"roi\": [\n            1029,\n            632,\n            89,\n            33\n        ],\n        \"expected\": [\n            \"难度挑战\"\n        ],\n        \"timeout\": 2000,\n        \"action\": \"StopTask\",\n        \"focus\": \"[color:red][WRN] 快速狩猎所选关卡未解锁(难度挑战)，任务显性失败 [/color]\"\n    },\n    \"QuickHunt_QuickBattleButton\": {"
+        },
+        {
+          "file": "Battle.json",
+          "type": "replace",
+          "count": 3,
+          "anchor": "        \"next\": [\n            \"QuickHunt_FastBattleMAXTouchHuntingGrounds\",\n            \"[JumpBack]QuickHunt_QuickBattleButton\"\n        ]",
+          "replacement": "        \"next\": [\n            \"QuickHunt_LockedStage_Panic\",\n            \"QuickHunt_FastBattleMAXTouchHuntingGrounds\",\n            \"[JumpBack]QuickHunt_QuickBattleButton\"\n        ]"
+        },
+        {
+          "file": "Battle.json",
+          "type": "replace",
+          "count": 1,
+          "anchor": "        \"next\": [\n            \"QuickHunt_NoAP_Torch\",\n            \"QuickHunt_TurnCharact_Start\",\n            \"QuickHunt_FastBattleMAXTouchCrystalCave\",\n            \"[JumpBack]QuickHunt_QuickBattleButton\"\n        ]",
+          "replacement": "        \"next\": [\n            \"QuickHunt_LockedStage_Panic\",\n            \"QuickHunt_NoAP_Torch\",\n            \"QuickHunt_TurnCharact_Start\",\n            \"QuickHunt_FastBattleMAXTouchCrystalCave\",\n            \"[JumpBack]QuickHunt_QuickBattleButton\"\n        ]"
+        },
+        {
+          "file": "Battle.json",
+          "type": "replace",
+          "count": 3,
+          "anchor": "        \"next\": [\n            \"QuickHunt_NoAP_Rice\",\n            \"QuickHunt_FastBattleMAXTouchAdventureRoute\",\n            \"[JumpBack]QuickHunt_QuickBattleButton\"\n        ]",
+          "replacement": "        \"next\": [\n            \"QuickHunt_LockedStage_Panic\",\n            \"QuickHunt_NoAP_Rice\",\n            \"QuickHunt_FastBattleMAXTouchAdventureRoute\",\n            \"[JumpBack]QuickHunt_QuickBattleButton\"\n        ]"
+        }
+      ],
+      "verify": "两路：① 已解锁关卡单跑快速狩猎正常跑完（无误触发）；② 把任务选项指向一个未解锁关卡单跑，任务不得绿勾，日志出现红色 WRN focus、停在难度挑战按钮/对话框画面。走不到 ② 时按 lifecycle 三态记「未走到」，不得宣称通过。",
+      "retire_when": "上游对未解锁关卡有等效处理（显性失败或自动打首领解锁），且实机验证通过。"
+    },
+    {
+      "id": "event-battle-ismenu-roi",
+      "title": "Event_Battle_IsMenu roi 扩大 [626,235,189,54]→[620,230,490,200]",
+      "kind": "shared-fix",
+      "status": "active-local",
+      "introduced": "2026-10-06",
+      "issue": "https://github.com/sunyink/MFABD2/issues/538",
+      "intent": "赛季活动挑战关详情页的离开判定 roi 太小、识别不到位。上游 issue #538 已提、PR 待验证后跟进；上游 main 仍为旧值 [626,235,189,54]（2026-10-10 核对），已安装发布包同样是旧值，故本地需重打。验证状态：未证成未证伪（2026-10-07 起顺延观察）。",
+      "files": [
+        "EventBattle.json"
+      ],
+      "applied_markers": [
+        {
+          "file": "EventBattle.json",
+          "node": "Event_Battle_IsMenu",
+          "contains": "620,\n            230,\n            490,\n            200"
+        }
+      ],
+      "edits": [
+        {
+          "file": "EventBattle.json",
+          "type": "node_replace",
+          "node": "Event_Battle_IsMenu",
+          "count": 1,
+          "anchor": "\"roi\": [\n            626,\n            235,\n            189,\n            54\n        ]",
+          "replacement": "\"roi\": [\n            620,\n            230,\n            490,\n            200\n        ]"
+        }
+      ],
+      "verify": "正式运行经过挑战关详情页时观察离开判定是否顺畅；结论按三态记录。",
+      "retire_when": "上游合入等效 roi 且已安装发布包自带 [620,230,490,200]，并经实机验证。"
+    },
+    {
+      "id": "global-victory-return",
+      "title": "复位链新增 Global_ToHomePage_VictoryReturn 胜利结算出口",
+      "kind": "shared-fix",
+      "status": "active-local",
+      "introduced": "2026-10-07",
+      "issue": "",
+      "intent": "普通战斗胜利结算屏在 Global_ToHomePage 复位链上没有任何出口，赛季任务打完获胜后在复位环节空转判失败。新增节点 OCR「返回」（roi [800,620,170,65]，target [880,655]，均为 1280×720 参考坐标——切勿写成 1920×1080 设备坐标，v1 就栽在这上面）并挂入 Global_ToHomePage 的 next。验证状态：2026-10-09 正式运行通过。",
+      "files": [
+        "Global.json"
+      ],
+      "applied_markers": [
+        {
+          "file": "Global.json",
+          "contains": "\"Global_ToHomePage_VictoryReturn\": {"
+        },
+        {
+          "file": "Global.json",
+          "node": "Global_ToHomePage",
+          "contains": "\"Global_ToHomePage_VictoryReturn\""
+        }
+      ],
+      "edits": [
+        {
+          "file": "Global.json",
+          "type": "replace",
+          "count": 1,
+          "anchor": "    \"Global_ToHomePage\": {",
+          "replacement": "    \"Global_ToHomePage_VictoryReturn\": {\n        \"desc\": \"[通用复位]战斗胜利结算屏,右下角有返回按钮,点击返回退出结算\",\n        \"recognition\": \"OCR\",\n        \"roi\": [\n            800,\n            620,\n            170,\n            65\n        ],\n        \"expected\": [\n            \"返回\"\n        ],\n        \"action\": \"Click\",\n        \"target\": [\n            880,\n            655\n        ],\n        \"post_delay\": 3000,\n        \"next\": [\n            \"Global_ToHomePage_Enter\",\n            \"Global_ToHomePage\"\n        ],\n        \"focus\": \"GO.胜利结算-点击返回\"\n    },\n    \"Global_ToHomePage\": {"
+        },
+        {
+          "file": "Global.json",
+          "type": "node_replace",
+          "node": "Global_ToHomePage",
+          "count": 1,
+          "anchor": "            \"Global_ToHomePage_HomeButton\",\n",
+          "replacement": "            \"Global_ToHomePage_HomeButton\",\n            \"Global_ToHomePage_VictoryReturn\",\n"
+        }
+      ],
+      "verify": "正式运行中普通战斗获胜后能经 VictoryReturn 离开结算屏回主界面（focus GO.胜利结算-点击返回），2026-10-09 已通过，后续顺延观察。",
+      "retire_when": "上游复位链自带胜利结算出口且实机验证通过。"
+    }
+  ]
+}
