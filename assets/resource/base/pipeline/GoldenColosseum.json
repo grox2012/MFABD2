@@ -7,33 +7,9 @@
   "desc": "识别已在黄金竞技场主页：复用 Global.json 的 Rec_Pack_GoldenColosseum（OCR 阵形 roi [94,601,95,55]），不重定义。草案要求同时读右上角入场计数 N/100，v1 合并到 GC_Final_Verify 的读数节点（同一 roi 口径），起始读数 TODO 见 NOTES。",
   "focus": "GC.已在竞技场主页",
   "next": [
-   "GC_ClickBattle"
+   "GC_OpenDialog"
   ],
-  "recognition": "And"
- },
- "GC_ClickBattle": {
-  "action": "Click",
-  "desc": "点主页 BATTLE 按钮开第一场（按钮中心设备 (1650,964)->参考 (1100,643)，2026-10-08/09 实机）。每场耗 1 次入场。",
-  "expected": [
-   "BATTLE"
-  ],
-  "focus": "GC.点击BATTLE",
-  "next": [
-   "GC_MatchFound",
-   "GC_ClickBattle"
-  ],
-  "post_delay": 2000,
-  "recognition": "OCR",
-  "roi": [
-   1020,
-   610,
-   180,
-   60
-  ],
-  "target": [
-   1100,
-   643
-  ],
+  "recognition": "And",
   "timeout": 30000
  },
  "GC_Enter_FromHome": {
@@ -91,26 +67,6 @@
   ],
   "timeout": 30000
  },
- "GC_FirstSettle": {
-  "desc": "识别第一场结算屏（VICTORY 或 DEFEAT 均可，胜负不影响连战设置）。VICTORY 字样位置据 2026-10-09 实机截图估算 roi，待标定。识别后转 GC_OpenAutoDialog 点 x1 药丸开自动战斗对话框。",
-  "expected": [
-   "VICTORY",
-   "DEFEAT"
-  ],
-  "focus": "GC.首场结算",
-  "next": [
-   "GC_OpenAutoDialog"
-  ],
-  "post_delay": 1000,
-  "recognition": "OCR",
-  "roi": [
-   730,
-   50,
-   220,
-   70
-  ],
-  "timeout": 300000
- },
  "GC_HUD_Monitor": {
   "desc": "监控分支（不阻塞主链、不点任何按钮，尤其不点右下「结束自动战斗」——2026-10-09 实测该钮+确认不可靠，截停靠 pipeline 外重启游戏）：识别战斗画面底部 HUD「正在进行N次中的第M次 · W胜L负 · 积分±X」（文案 2026-10-09 实机）。仿 PVP_AutoBattle_Battling（roi [50,576,203,69] expected 正在进行）。roi 为估算值（HUD 位于底部条），待实机标定。胜率阈值停机判定 TODO：M/N、W/L、积分的结构化解析走 agent 自定义识别（agent/recognition/ocr_score.py 先例），option 阈值 override 到该识别的 param，见 NOTES。",
   "expected": [
@@ -120,19 +76,15 @@
   "post_delay": 5000,
   "recognition": "OCR",
   "roi": [
-   60,
-   665,
-   460,
-   50
-  ],
-  "timeout": 8000
+   40,
+   615,
+   560,
+   45
+  ]
  },
  "GC_LoopStart": {
   "action": "Click",
-  "desc": "点对话框「战斗开始」启动 MAX 连战（按钮设备 (1057,753)->参考 (705,502)，2026-10-09 实机 grounding）。仿 PVP_AutoBattleStart。启动后主链挂监控分支：晋级屏处理（JumpBack）、HUD 监控（JumpBack），最终等 GC_Result_Read。连战时长可达数十分钟（31 场约 25 分钟，2026-10-09 实测），等待语义为 v1 首要实机验证项，见 NOTES。",
-  "expected": [
-   "战斗开始"
-  ],
+  "desc": "点对话框「战斗开始」启动连战（按钮中心 (689,531)）。【2026-10-09 实测关键】对话框打开后有最长约 2 分钟的忙碌窗（顶部蓝色转圈），窗内一切点击被丢弃不排队；MAX/开始都必须耐心重试直到生效。本节点 DirectHit 每轮重试、HUD 出现即被监控分支接管；timeout 放宽到 900s 骑过忙碌窗。识别不用 OCR（按钮文本 OCR 实测回空框）。",
   "focus": "GC.连战开始",
   "next": [
    "[JumpBack]GC_Promotion_Detect",
@@ -141,58 +93,12 @@
    "GC_LoopStart"
   ],
   "post_delay": 10000,
-  "recognition": "OCR",
-  "roi": [
-   620,
-   475,
-   180,
-   55
-  ],
-  "timeout": 30000
- },
- "GC_MatchFound": {
-  "desc": "等待对决屏/战斗开始（等待态，无动作）。对决屏双方名下有「胜利分」字样（2026-10-09 实机截图）；自动战斗+3倍速为账号持久设置，进战斗即自动打。roi 为估算值，待实机标定。",
-  "expected": [
-   "胜利分"
-  ],
-  "focus": "GC.对决已开始",
-  "next": [
-   "GC_FirstSettle"
-  ],
-  "post_delay": 5000,
-  "recognition": "OCR",
-  "roi": [
-   700,
-   100,
-   400,
-   200
-  ],
-  "timeout": 180000
- },
- "GC_OpenAutoDialog": {
-  "action": "Click",
-  "desc": "点结算屏底部 [x1 战斗] 的 x1 药丸（设备 (1150,1000)->参考 (767,667)，2026-10-09 实机 grounding）打开「自动战斗」次数对话框。roi 为估算值（按 战斗 二字位置），待标定。",
-  "expected": [
-   "战斗"
-  ],
-  "focus": "GC.打开自动战斗对话框",
-  "next": [
-   "GC_SetCount_MAX",
-   "GC_OpenAutoDialog"
-  ],
-  "post_delay": 1500,
-  "recognition": "OCR",
-  "roi": [
-   760,
-   640,
-   140,
-   50
-  ],
+  "recognition": "DirectHit",
+  "timeout": 900000,
   "target": [
-   767,
-   667
-  ],
-  "timeout": 10000
+   689,
+   531
+  ]
  },
  "GC_Promotion_Confirm": {
   "action": "Click",
@@ -202,7 +108,6 @@
   ],
   "focus": "GC.晋级确认",
   "next": [
-   "GC_Final_Verify",
    "GC_Result_Read"
   ],
   "post_delay": 2000,
@@ -231,34 +136,7 @@
    480,
    320,
    160
-  ],
-  "timeout": 5000
- },
- "GC_Result_Close": {
-  "action": "Click",
-  "desc": "关闭结果对话框后离开结算屏回竞技场主页：点「离开」（设备 (1120,1010)->参考 (747,673)，2026-10-09 实机）。仿 PVP_BattleLeave 的 离开 识别形态。离开后可能先弹晋级屏（2026-10-09 大师II 实例），故 next 先挂 GC_Promotion_Detect。",
-  "expected": [
-   "离开"
-  ],
-  "focus": "GC.离开结算",
-  "next": [
-   "GC_Promotion_Detect",
-   "GC_Final_Verify",
-   "GC_Result_Close"
-  ],
-  "post_delay": 3000,
-  "recognition": "OCR",
-  "roi": [
-   690,
-   645,
-   120,
-   50
-  ],
-  "target": [
-   747,
-   673
-  ],
-  "timeout": 30000
+  ]
  },
  "GC_Result_Read": {
   "action": "Click",
@@ -268,21 +146,21 @@
   ],
   "focus": "GC.反复战斗结果读数",
   "next": [
-   "GC_Result_Close"
+   "GC_Result_Close_V",
+   "GC_Result_Close_D"
   ],
   "post_delay": 2000,
   "recognition": "OCR",
   "roi": [
-   440,
-   150,
-   400,
-   340
+   540,
+   166,
+   201,
+   78
   ],
   "target": [
    807,
    147
-  ],
-  "timeout": 120000
+  ]
  },
  "GC_SetCount_MAX": {
   "action": "Click",
@@ -293,8 +171,6 @@
   "focus": "GC.次数设MAX",
   "max_hit": 5,
   "next": [
-   "GC_SetCount_Verify",
-   "GC_SetCount_MAX",
    "GC_LoopStart"
   ],
   "post_delay": 1000,
@@ -306,10 +182,11 @@
    45
   ],
   "target": [
-   858,
-   363
+   833,
+   371
   ],
-  "timeout": 5000
+  "timeout": 5000,
+  "pre_delay": 2000
  },
  "GC_SetCount_Verify": {
   "desc": "校验对话框显示「自动战斗N次」（2026-10-09 实机：MAX=剩余31次时显示 自动战斗31次）。默认（MAX 模式）只校验格式；固定场次 option 用 pipeline_override 把 expected 改成 ^自动战斗<场次>次$ 精确校验。自动跳过开关 ON 为账号持久设置，v1 不校验，TODO 见 NOTES。roi 据对话框中心（设备 (960,660)->(640,440)）标定，宽度估算。",
@@ -332,15 +209,141 @@
    420,
    220,
    40
-  ]
+  ],
+  "timeout": 30000
  },
  "GC_TaskStart": {
   "desc": "黄金竞技场连战任务入口（分发节点）。仿 PVP_TaskStart：先试已在竞技场主页，次走全局复位到主界面，再走入口点击。实证出处：2026-10-08/09 手动与 MAX 连战全程。",
   "next": [
    "GC_AtArena",
+   "GC_LeaveSettle_V",
+   "GC_LeaveSettle_D",
    "[JumpBack]Global_ToHomePage",
    "GC_Enter_FromHome"
   ],
   "timeout": 5000
+ },
+ "GC_LeaveSettle_V": {
+  "recognition": "OCR",
+  "roi": [
+   820,
+   640,
+   200,
+   55
+  ],
+  "expected": [
+   "战斗"
+  ],
+  "action": "Click",
+  "target": [
+   1119,
+   663
+  ],
+  "post_delay": 3000,
+  "next": [
+   "GC_AtArena"
+  ],
+  "focus": "GC.离开结算屏(胜)",
+  "desc": "胜利结算布局：药丸「战斗」为锚（OCR box [935,650]），点「离开」中心 (1119,663)（2026-10-09 全分辨率 grounding 定案；旧值 (1010,671) 落在两钮间死区，实测无效）。"
+ },
+ "GC_LeaveSettle_D": {
+  "recognition": "OCR",
+  "roi": [
+   560,
+   640,
+   200,
+   55
+  ],
+  "expected": [
+   "战斗"
+  ],
+  "action": "Click",
+  "target": [
+   763,
+   671
+  ],
+  "post_delay": 3000,
+  "next": [
+   "GC_AtArena"
+  ],
+  "focus": "GC.离开结算屏(败)",
+  "desc": "败北结算布局：以药丸「战斗」为锚，点「离开」钮中心 (763,671) 回竞技场主页（2026-10-09 实机）。"
+ },
+ "GC_Result_Close_V": {
+  "recognition": "OCR",
+  "roi": [
+   820,
+   640,
+   200,
+   55
+  ],
+  "expected": [
+   "战斗"
+  ],
+  "action": "Click",
+  "target": [
+   1119,
+   663
+  ],
+  "post_delay": 3000,
+  "timeout": 30000,
+  "next": [
+   "GC_Promotion_Detect",
+   "GC_Final_Verify",
+   "GC_Result_Close_V"
+  ],
+  "focus": "GC.离开结算(V)",
+  "desc": "关闭结果对话框后在胜利结算屏点「离开」回竞技场主页（坐标经 2026-10-09 全分辨率定案）。"
+ },
+ "GC_Result_Close_D": {
+  "recognition": "OCR",
+  "roi": [
+   560,
+   640,
+   200,
+   55
+  ],
+  "expected": [
+   "战斗"
+  ],
+  "action": "Click",
+  "target": [
+   763,
+   671
+  ],
+  "post_delay": 3000,
+  "timeout": 30000,
+  "next": [
+   "GC_Promotion_Detect",
+   "GC_Final_Verify",
+   "GC_Result_Close_D"
+  ],
+  "focus": "GC.离开结算(D)",
+  "desc": "关闭结果对话框后在败北结算屏点「离开」回竞技场主页（坐标经 2026-10-09 全分辨率定案）。"
+ },
+ "GC_OpenDialog": {
+  "recognition": "OCR",
+  "roi": [
+   850,
+   590,
+   220,
+   100
+  ],
+  "expected": [
+   "自动战斗"
+  ],
+  "action": "Click",
+  "target": [
+   983,
+   630
+  ],
+  "post_delay": 3000,
+  "timeout": 30000,
+  "next": [
+   "GC_SetCount_MAX",
+   "GC_OpenDialog"
+  ],
+  "focus": "GC.打开自动战斗对话框",
+  "desc": "竞技场主页点右下 [xN] 药丸开「自动战斗」对话框（2026-10-09 实机定案：对话框是主页功能，入口=主页药丸 (1475,945) 设备；结算屏药丸则是「再来一场」按钮、点之直接开战，切勿混淆）。"
  }
 }
