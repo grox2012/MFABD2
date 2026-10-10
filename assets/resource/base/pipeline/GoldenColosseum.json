@@ -84,7 +84,7 @@
  },
  "GC_LoopStart": {
   "action": "Click",
-  "desc": "点对话框「战斗开始」启动连战（按钮中心 (689,531)）。【2026-10-09 实测关键】对话框打开后有最长约 2 分钟的忙碌窗（顶部蓝色转圈），窗内一切点击被丢弃不排队；MAX/开始都必须耐心重试直到生效。本节点 DirectHit 每轮重试、HUD 出现即被监控分支接管；timeout 放宽到 900s 骑过忙碌窗。识别不用 OCR（按钮文本 OCR 实测回空框）。",
+  "desc": "点对话框「战斗开始」启动连战。【2026-10-09 18:1x 定案】按钮下缘约 25px 是死区：中心点 (689,531)=设备(1034,796) 点击数十次全无效（脚本/手动/长按皆然），点上半部 (687,520)=设备(1030,780) 一次即启动——今早人工成功正因点位偏上。识别 DirectHit（按钮文本 OCR 回空框）；next 分支每轮先查晋级/HUD/结果，点中后 HUD 出现即被监控接管。",
   "focus": "GC.连战开始",
   "next": [
    "[JumpBack]GC_Promotion_Detect",
@@ -96,8 +96,8 @@
   "recognition": "DirectHit",
   "timeout": 900000,
   "target": [
-   689,
-   531
+   687,
+   520
   ]
  },
  "GC_Promotion_Confirm": {
@@ -218,6 +218,7 @@
    "GC_AtArena",
    "GC_LeaveSettle_V",
    "GC_LeaveSettle_D",
+   "GC_LeaveSettle_L",
    "[JumpBack]Global_ToHomePage",
    "GC_Enter_FromHome"
   ],
@@ -298,18 +299,18 @@
  "GC_Result_Close_D": {
   "recognition": "OCR",
   "roi": [
-   560,
+   500,
    640,
-   200,
-   55
+   140,
+   60
   ],
   "expected": [
    "战斗"
   ],
   "action": "Click",
   "target": [
-   763,
-   671
+   680,
+   673
   ],
   "post_delay": 3000,
   "timeout": 30000,
@@ -319,7 +320,7 @@
    "GC_Result_Close_D"
   ],
   "focus": "GC.离开结算(D)",
-  "desc": "关闭结果对话框后在败北结算屏点「离开」回竞技场主页（坐标经 2026-10-09 全分辨率定案）。"
+  "desc": "连战结尾 DEFEAT 结算屏点「离开」（布局与单场败北不同：整栏左移；药丸 ref 507-607、「离开」中心 (680,673)，2026-10-09 实测截图定案）。"
  },
  "GC_OpenDialog": {
   "recognition": "OCR",
@@ -345,5 +346,28 @@
   ],
   "focus": "GC.打开自动战斗对话框",
   "desc": "竞技场主页点右下 [xN] 药丸开「自动战斗」对话框（2026-10-09 实机定案：对话框是主页功能，入口=主页药丸 (1475,945) 设备；结算屏药丸则是「再来一场」按钮、点之直接开战，切勿混淆）。"
+ },
+ "GC_LeaveSettle_L": {
+  "recognition": "OCR",
+  "roi": [
+   500,
+   640,
+   140,
+   60
+  ],
+  "expected": [
+   "战斗"
+  ],
+  "action": "Click",
+  "target": [
+   680,
+   673
+  ],
+  "post_delay": 3000,
+  "next": [
+   "GC_AtArena"
+  ],
+  "focus": "GC.离开结算屏(连战尾)",
+  "desc": "连战结尾结算布局（栏位左移）：以药丸「战斗」为锚点「离开」(680,673) 回竞技场主页。"
  }
 }
