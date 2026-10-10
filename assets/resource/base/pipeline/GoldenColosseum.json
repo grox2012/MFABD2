@@ -38,7 +38,7 @@
   "timeout": 30000
  },
  "GC_Final_Verify": {
-  "desc": "回竞技场主页做最终对账：OCR 右上角入场计数 N/100（MAX 打满后应为 0/100，2026-10-09 实机终局读数）。roi 为估算值——仿 PVP_BattleWaitingLoad 的 AP 读数位 [1040,36,62,21] 按竞技场计数实际位置（设备约 (1650,60)->(1100,40)）右移，待实机标定。与开局读数比对、积分变化比对 TODO 走 agent 计数器/自定义识别（agent/recognition/counter.py 先例），见 NOTES。",
+  "desc": "收尾核对：竞技场主页右下入场计数（药丸左侧，参考约 (980-1040,587-603)）应为「0/100」量级（或与设定场次相符的余量）。2026-10-09 晚实测校准（原 roi 在右上角、位置错误）。",
   "expected": [
    "[0-9]+/100"
   ],
@@ -60,8 +60,8 @@
    ]
   ],
   "roi": [
-   1055,
-   25,
+   960,
+   575,
    130,
    45
   ],
@@ -119,12 +119,17 @@
    220,
    60
   ],
-  "timeout": 10000
+  "timeout": 10000,
+  "target": [
+   573,
+   668
+  ]
  },
  "GC_Promotion_Detect": {
   "desc": "晋级屏识别（只识别，不做任何强制恢复）。晋级屏文案「恭喜晋级。」+段位名+胜利分（2026-10-09 实机：钻石I 1564、大师II 1700 两例）。roi 为估算值，待标定。注意：该屏偶发楔死输入（2026-10-09 两次实证，runbook 故障库 #12）——楔死时本节点组点确认无效，恢复动作（restartgame 重启）在 pipeline 外由盯跑方执行，本文件不实现任何强制恢复。",
   "expected": [
-   "恭喜晋级"
+   "恭喜晋级",
+   "段位下滑"
   ],
   "focus": "GC.晋级屏出现",
   "next": [
@@ -140,7 +145,7 @@
  },
  "GC_Result_Read": {
   "action": "Click",
-  "desc": "连战结束对账读数：识别「反复战斗结果」对话框（与 PVP_BattleResult 同名对话框；roi 仿其 [540,166,201,78] 并放大到覆盖三项读数）。对话框三项（2026-10-09 实机：已完成31次的战斗 / 攻击战绩 22胜9负，胜率70.97% / 积分变化 +积分126）在本 roi 内一并 OCR，原始文本留待解析。读后点对话框右上 x 关闭（设备 (1210,220)->参考 (807,147)，2026-10-09 实机；仿 PVP_BattleResult 在识别节点内 click dismiss 的先例）。胜率停机判定 TODO：纯 expected/regex 无法算胜率，v1 只读不判；判定走 agent 自定义识别（ocr_score/ocr_decision 先例），阈值由 option pipeline_override 注入，见 NOTES。",
+  "desc": "连战全部结束时出现「反复战斗结果」对话框：先确认其存在（统计文本会随 reco 明细进日志）；target 点右上 × 关对话框。roi 覆盖标题+统计行（2026-10-09 晚按实机迭代）。",
   "expected": [
    "反复战斗结果"
   ],
@@ -152,10 +157,10 @@
   "post_delay": 2000,
   "recognition": "OCR",
   "roi": [
-   540,
-   166,
-   201,
-   78
+   430,
+   160,
+   400,
+   120
   ],
   "target": [
    807,
@@ -242,6 +247,7 @@
   ],
   "post_delay": 3000,
   "next": [
+   "GC_RankScreen_Dismiss",
    "GC_AtArena"
   ],
   "focus": "GC.离开结算屏(胜)",
@@ -265,6 +271,7 @@
   ],
   "post_delay": 3000,
   "next": [
+   "GC_RankScreen_Dismiss",
    "GC_AtArena"
   ],
   "focus": "GC.离开结算屏(败)",
@@ -365,9 +372,34 @@
   ],
   "post_delay": 3000,
   "next": [
+   "GC_RankScreen_Dismiss",
    "GC_AtArena"
   ],
   "focus": "GC.离开结算屏(连战尾)",
   "desc": "连战结尾结算布局（栏位左移）：以药丸「战斗」为锚点「离开」(680,673) 回竞技场主页。"
+ },
+ "GC_RankScreen_Dismiss": {
+  "recognition": "OCR",
+  "roi": [
+   430,
+   640,
+   290,
+   55
+  ],
+  "expected": [
+   "确认"
+  ],
+  "action": "Click",
+  "target": [
+   573,
+   668
+  ],
+  "timeout": 8000,
+  "post_delay": 2000,
+  "next": [
+   "GC_AtArena"
+  ],
+  "focus": "GC.段位屏确认",
+  "desc": "回主页途中弹出的段位变化屏（晋级/降级）消解：OCR「确认」锚 + 点按钮上半部中心 (573,668)（2026-10-09 实证：降级屏 (960,1006) 设备无效、(860,995) 有效）。无段位屏时 8 秒超时后由 next 兜底 AtArena。"
  }
 }
