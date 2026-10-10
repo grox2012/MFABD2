@@ -230,6 +230,7 @@
         ],
         "timeout": 5000,
         "next": [
+            "QuickHunt_LockedStage_Panic",
             "QuickHunt_FastBattleMAXTouchHuntingGrounds",
             "[JumpBack]QuickHunt_QuickBattleButton"
         ]
@@ -256,6 +257,7 @@
         ],
         "timeout": 5000,
         "next": [
+            "QuickHunt_LockedStage_Panic",
             "QuickHunt_FastBattleMAXTouchHuntingGrounds",
             "[JumpBack]QuickHunt_QuickBattleButton"
         ]
@@ -282,6 +284,7 @@
         ],
         "timeout": 5000,
         "next": [
+            "QuickHunt_LockedStage_Panic",
             "QuickHunt_FastBattleMAXTouchHuntingGrounds",
             "[JumpBack]QuickHunt_QuickBattleButton"
         ]
@@ -412,6 +415,7 @@
         "green_mask": true,
         "threshold": 0.8,
         "next": [
+            "QuickHunt_LockedStage_Panic",
             "QuickHunt_NoAP_Rice",
             "QuickHunt_FastBattleMAXTouchAdventureRoute",
             "[JumpBack]QuickHunt_QuickBattleButton"
@@ -601,6 +605,7 @@
             "QuickHunt_CollectMapAdventureRouteDoubleCk1"
         ],
         "next": [
+            "QuickHunt_LockedStage_Panic",
             "QuickHunt_NoAP_Rice",
             "QuickHunt_FastBattleMAXTouchAdventureRoute",
             "[JumpBack]QuickHunt_QuickBattleButton"
@@ -943,6 +948,7 @@
             "Anc_Ocr_Enable_Clr"
         ],
         "next": [
+            "QuickHunt_LockedStage_Panic",
             "QuickHunt_NoAP_Torch",
             "QuickHunt_TurnCharact_Start",
             "QuickHunt_FastBattleMAXTouchCrystalCave",
@@ -981,6 +987,22 @@
         ],
         "action": "Click",
         "focus": "BB.付费火把无AP弹窗"
+    },
+    "QuickHunt_LockedStage_Panic": {
+        "desc": "[本地补丁] 所选关卡未解锁时右下按钮为「难度挑战」而非「快速狩猎」，命中即显性失败，禁止假成功；解锁由每日阶段四按规程处理。见 patches/manifest.json#quickhunt-locked-stage-fail",
+        "recognition": "OCR",
+        "roi": [
+            1029,
+            632,
+            89,
+            33
+        ],
+        "expected": [
+            "难度挑战"
+        ],
+        "timeout": 2000,
+        "action": "StopTask",
+        "focus": "[color:red][WRN] 快速狩猎所选关卡未解锁(难度挑战)，任务显性失败 [/color]"
     },
     "QuickHunt_QuickBattleButton": {
         "desc": "寻找快速狩猎，点击(OCR+CLR)必定1级界面才点击",
@@ -1254,6 +1276,7 @@
         "green_mask": true,
         "threshold": 0.8,
         "next": [
+            "QuickHunt_LockedStage_Panic",
             "QuickHunt_NoAP_Rice",
             "QuickHunt_FastBattleMAXTouchAdventureRoute",
             "[JumpBack]QuickHunt_QuickBattleButton"

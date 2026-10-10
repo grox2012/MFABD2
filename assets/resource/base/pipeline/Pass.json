@@ -34,6 +34,7 @@
             65
         ],
         "expected": "通行证",
+        "timeout": 90000,
         "next": [
             "Pass_SelectPass",
             "[JumpBack]Pass_TrySwip"
