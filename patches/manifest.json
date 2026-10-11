@@ -173,6 +173,47 @@
       ],
       "verify": "正式运行中普通战斗获胜后能经 VictoryReturn 离开结算屏回主界面（focus GO.胜利结算-点击返回），2026-10-09 已通过，后续顺延观察。",
       "retire_when": "上游复位链自带胜利结算出口且实机验证通过。"
+    },
+    {
+      "id": "daily-intimacy-livelock-exit",
+      "title": "谈心活锁出口：全员亲密度达上限时经 AllCapped 双闸检查走 End 打标",
+      "kind": "shared-fix",
+      "status": "active",
+      "introduced": "2026-10-10",
+      "issue": "https://github.com/sunyink/MFABD2/issues/544",
+      "intent": "Daily_Intimacy_CatalogCard 的唯一正常出口是 Daily_Intimacy_Exhausted（剩余谈心次数 OCR 为 0）。当可谈对象全部亲密度达上限（LV MAX）时 Daily_Intimacy_Up（要求 Sub_Intimacy_Number + Sub_Intimacy_LV）永不命中，次数永远到不了 0（2026-10-10 实测剩余 1 次、对象 LV.6 MAX），Set（max 1）/Turn（max 6）双闸先后达上限后模块无任何完成出口，MarkComplete 永不打标，Daily 主 Hub 每轮重新进入谈心模块形成活锁：第一轮空转 18 分 02 秒、自修复补跑再空转 10 分 46 秒，均靠人工停（当晚 [检查拦截] 上限日志 99 条）。补丁在 CatalogCard 的 next 里、Swip 之前插入一条双闸 inverse 检查链（Set 已达上限 且 Turn 已达上限 → Daily_Intimacy_End 打标退出）。安全性：每次 CatalogCard 评估时 Up 都排在该出口之前，可谈对象会被先命中；Turn 达上限意味着全员已轮过一遍，出口只在「全员轮完且无人可谈、次数又未清零」时触发。",
+      "files": [
+        "Daily.json"
+      ],
+      "applied_markers": [
+        {
+          "file": "Daily.json",
+          "contains": "\"Daily_Intimacy_AllCapped_CkSet\": {"
+        },
+        {
+          "file": "Daily.json",
+          "node": "Daily_Intimacy_CatalogCard",
+          "contains": "\"Daily_Intimacy_AllCapped_CkSet\""
+        }
+      ],
+      "edits": [
+        {
+          "file": "Daily.json",
+          "type": "replace",
+          "count": 1,
+          "anchor": "    \"Daily_Intimacy_Switch_Set\": {",
+          "replacement": "    \"Daily_Intimacy_AllCapped_CkSet\": {\n        \"desc\": \"[本地补丁] 谈心活锁出口（前段）：Set 闸已达上限（inverse 命中）才继续。见 patches/manifest.json#daily-intimacy-livelock-exit\",\n        \"recognition\": \"Custom\",\n        \"custom_recognition\": \"CheckTag\",\n        \"custom_recognition_param\": {\n            \"tag\": \"Intimacy_Switch_Set\",\n            \"max\": 1\n        },\n        \"inverse\": true,\n        \"next\": [\n            \"Daily_Intimacy_AllCapped_CkTurn\"\n        ]\n    },\n    \"Daily_Intimacy_AllCapped_CkTurn\": {\n        \"desc\": \"[本地补丁] 谈心活锁出口（后段）：Turn 闸也达上限（全员已轮过一遍且无人可谈、剩余次数又不到 0）→ 走 Daily_Intimacy_End 打标退出，禁止活锁\",\n        \"recognition\": \"Custom\",\n        \"custom_recognition\": \"CheckTag\",\n        \"custom_recognition_param\": {\n            \"tag\": \"Intimacy_Switch_Turn\",\n            \"max\": 6\n        },\n        \"inverse\": true,\n        \"next\": [\n            \"Daily_Intimacy_End\"\n        ],\n        \"focus\": \"[color:red][WRN] 谈心全员已达上限但仍有剩余次数，走补丁出口打标完成 [/color]\"\n    },\n    \"Daily_Intimacy_Switch_Set\": {"
+        },
+        {
+          "file": "Daily.json",
+          "type": "replace",
+          "count": 1,
+          "anchor": "\"[JumpBack]Daily_Intimacy_Switch_Turn\",\n            \"Daily_Intimacy_Swip\"",
+          "replacement": "\"[JumpBack]Daily_Intimacy_Switch_Turn\",\n            \"Daily_Intimacy_AllCapped_CkSet\",\n            \"Daily_Intimacy_Swip\""
+        }
+      ],
+      "verify": "在「仍有剩余谈心次数且对象全达上限」的状态下单跑 [领取]日常任务：谈心模块应经 AllCapped 出口打标退出（日志出现补丁 focus），整个任务在数分钟内完成、其后模块（广场等）正常执行，不再出现 [检查拦截] 上限日志轮转。正常日（有可谈对象）也须顺延观察一次，确认谈心照常进行、出口不误触发。",
+      "retire_when": "上游给谈心模块补了等效的「全员上限」完成出口且实机验证通过。"
     }
   ]
 }
