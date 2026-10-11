@@ -372,6 +372,50 @@
       ],
       "verify": "PENDING: solo re-run — expect OnCostume -> NoQuickCostume (instant) -> ToGear -> NoQuickGear (instant) -> Finish -> original gate exit, total well under a minute, no Abort.",
       "retire_when": "Same as gacha-free-nobadge-collect; this delta folds into it."
+    },
+    {
+      "id": "gacha-free-nobadge-collect-v4",
+      "title": "白嫖收集链 v4:页内锚点等待预算放宽(冷启动首进页加载慢)",
+      "kind": "shared-fix",
+      "status": "active",
+      "introduced": "2026-10-10",
+      "issue": "https://github.com/sunyink/MFABD2/issues/544",
+      "intent": "v3 实测:冷启动(启动脚本重拉 App)后首进抽抽乐页,OnCostume 的 Or 锚点 25 秒内始终未命中而 Abort;而 v2 在页面已预热时同一锚点 0.6 秒命中——首进页的版面元素(兑换/查看概率)渲染明显慢于 25 秒预算。v4 把 OnCostume 等待放宽到 90000、ToGear/Finish 放宽到 30000,其余不变。",
+      "files": [
+        "GACHA_ADV.json"
+      ],
+      "applied_markers": [
+        {
+          "file": "GACHA_ADV.json",
+          "node": "GachaFree_OnCostume",
+          "contains": "\"timeout\": 90000"
+        }
+      ],
+      "edits": [
+        {
+          "file": "GACHA_ADV.json",
+          "type": "replace",
+          "count": 1,
+          "anchor": "    \"GachaFree_OnCostume\": {\n        \"recognition\": \"Or\",\n        \"any_of\": [\n            \"GachaADV_PageEnter_1#\",\n            \"GachaADV_GachaPage2\"\n        ],\n        \"timeout\": 25000,",
+          "replacement": "    \"GachaFree_OnCostume\": {\n        \"recognition\": \"Or\",\n        \"any_of\": [\n            \"GachaADV_PageEnter_1#\",\n            \"GachaADV_GachaPage2\"\n        ],\n        \"timeout\": 90000,"
+        },
+        {
+          "file": "GACHA_ADV.json",
+          "type": "replace",
+          "count": 1,
+          "anchor": "    \"GachaFree_ToGear\": {\n        \"recognition\": \"Or\",\n        \"any_of\": [\n            \"GachaADV_PageEnter_1#\",\n            \"GachaADV_GachaPage2\"\n        ],\n        \"timeout\": 12000,",
+          "replacement": "    \"GachaFree_ToGear\": {\n        \"recognition\": \"Or\",\n        \"any_of\": [\n            \"GachaADV_PageEnter_1#\",\n            \"GachaADV_GachaPage2\"\n        ],\n        \"timeout\": 30000,"
+        },
+        {
+          "file": "GACHA_ADV.json",
+          "type": "replace",
+          "count": 1,
+          "anchor": "    \"GachaFree_Finish\": {\n        \"recognition\": \"Or\",\n        \"any_of\": [\n            \"GachaADV_PageEnter_1#\",\n            \"GachaADV_GachaPage2\"\n        ],\n        \"timeout\": 12000,",
+          "replacement": "    \"GachaFree_Finish\": {\n        \"recognition\": \"Or\",\n        \"any_of\": [\n            \"GachaADV_PageEnter_1#\",\n            \"GachaADV_GachaPage2\"\n        ],\n        \"timeout\": 30000,"
+        }
+      ],
+      "verify": "PENDING: cold solo re-run — expect OnCostume to match within the widened budget and the chain to traverse both tabs and hand back.",
+      "retire_when": "Same as gacha-free-nobadge-collect; this delta folds into it."
     }
   ]
 }
