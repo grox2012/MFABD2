@@ -214,6 +214,47 @@
       ],
       "verify": "VERIFIED 2026-10-10 evening solo run of [领取]日常任务: intimacy module cycled partners (Turn 3->6, Set 1/1 capped), then focus line 谈心全员已达上限但仍有剩余次数，走补丁出口打标完成 fired, Daily_Intimacy@g_daily completion mark written, task finished and queue advanced; whole Daily task took ~2m54s vs 18m03s livelock in the scheduled run. Remaining talk count was 1 at patch time (spent manually afterwards on 提尔, count now 0).",
       "retire_when": "上游给谈心模块补了等效的「全员上限」完成出口且实机验证通过。"
+    },
+    {
+      "id": "gacha-free-nobadge-collect",
+      "title": "白嫖抽卡去红点门：无视主页图标红点，进页逐页签一键收服装/装备免费抽",
+      "kind": "shared-fix",
+      "status": "active",
+      "introduced": "2026-10-10",
+      "issue": "https://github.com/sunyink/MFABD2/issues/544",
+      "intent": "GachaADV 入口 GachaADV_HomePage_Enter 只在主页抽抽乐图标带红点（RedDotDetector 命中 GachaADV_GachaRed_Have）时才进页，无红点即以「无可关注抽抽乐」退出。但 2026-10-10 实测主页图标无红点时，页内服装/装备两页签各有 3 次每日免费抽未领，任务 2 秒空转退出、6 次免费抽（约合 6 张红票）险些漏掉（当晚靠人工补抽）。补丁给 GachaADV_Start 前置一条自控收集链 GachaFree_*：在主页无条件点图标进页，在服装页签找「所有免费抽抽乐」一键收集（确认→跳过动画→结算），再切装备页签同样收集一次，最后返回主页把控制权交回原 GachaADV_HomePage_Enter（原红点门与逐池 ADV 流程保持不变，作为第二层）。可选节点（Quick/Confirm/Briefing）均带 timeout + on_error 降级路线：无可收时逐级跳过、异常时经 GachaFree_Abort 回原流程，不挂死、不触碰任何付费抽按钮。",
+      "files": [
+        "GACHA_ADV.json"
+      ],
+      "applied_markers": [
+        {
+          "file": "GACHA_ADV.json",
+          "contains": "\"GachaFree_Enter\": {"
+        },
+        {
+          "file": "GACHA_ADV.json",
+          "node": "GachaADV_Start",
+          "contains": "\"GachaFree_Enter\""
+        }
+      ],
+      "edits": [
+        {
+          "file": "GACHA_ADV.json",
+          "type": "replace",
+          "count": 1,
+          "anchor": "    \"GachaADV_Start\": {",
+          "replacement": "    \"GachaFree_Enter\": {\n        \"recognition\": \"And\",\n        \"all_of\": [\n            \"Rec_HomePage_GA_Ocr\",\n            \"Sub_HomePage_GA_Bright_Clr\"\n        ],\n        \"action\": \"Click\",\n        \"target\": [\n            129,\n            642\n        ],\n        \"post_delay\": 3500,\n        \"next\": [\n            \"GachaFree_OnCostume\"\n        ],\n        \"focus\": \"GA.补丁:无视主页红点直接进页收集免费抽\"\n    },\n    \"GachaFree_OnCostume\": {\n        \"recognition\": \"And\",\n        \"all_of\": [\n            \"GachaADV_PageEnter_1#\"\n        ],\n        \"timeout\": 25000,\n        \"on_error\": [\n            \"GachaFree_Abort\"\n        ],\n        \"next\": [\n            \"GachaFree_QuickCostume\"\n        ]\n    },\n    \"GachaFree_QuickCostume\": {\n        \"recognition\": \"OCR\",\n        \"roi\": [\n            183,\n            596,\n            183,\n            76\n        ],\n        \"expected\": \"所有免费抽抽乐\",\n        \"action\": \"Click\",\n        \"post_delay\": 2000,\n        \"timeout\": 8000,\n        \"on_error\": [\n            \"GachaFree_ToGear\"\n        ],\n        \"next\": [\n            \"GachaFree_Confirm\"\n        ],\n        \"focus\": \"GA.补丁:服装页一键免费抽\"\n    },\n    \"GachaFree_Confirm\": {\n        \"recognition\": \"OCR\",\n        \"roi\": [\n            660,\n            398,\n            105,\n            99\n        ],\n        \"expected\": \"确认\",\n        \"action\": \"Click\",\n        \"post_delay\": 3000,\n        \"timeout\": 10000,\n        \"on_error\": [\n            \"GachaFree_ToGear\"\n        ],\n        \"next\": [\n            \"GachaFree_Briefing\",\n            \"[JumpBack]Gacha_Quick_Skip\",\n            \"[JumpBack]Gacha_Quick_5X\",\n            \"GachaFree_Confirm\"\n        ]\n    },\n    \"GachaFree_Briefing\": {\n        \"recognition\": \"Or\",\n        \"any_of\": [\n            \"Rec_<Gacha_Quick_Briefing>_Tmp\",\n            \"Rec_<Gacha_Quick_Briefing>_Ocr\"\n        ],\n        \"timeout\": 30000,\n        \"on_error\": [\n            \"GachaFree_ToGear\"\n        ],\n        \"next\": [\n            \"GachaFree_ToGear\",\n            \"[JumpBack]Global_BackPageHub_Once\"\n        ]\n    },\n    \"GachaFree_ToGear\": {\n        \"recognition\": \"And\",\n        \"all_of\": [\n            \"GachaADV_PageEnter_1#\"\n        ],\n        \"action\": \"Click\",\n        \"target\": [\n            138,\n            265\n        ],\n        \"post_delay\": 2000,\n        \"timeout\": 12000,\n        \"on_error\": [\n            \"GachaFree_Finish\"\n        ],\n        \"next\": [\n            \"GachaFree_QuickGear\"\n        ],\n        \"focus\": \"GA.补丁:切换装备页签\"\n    },\n    \"GachaFree_QuickGear\": {\n        \"recognition\": \"OCR\",\n        \"roi\": [\n            183,\n            596,\n            183,\n            76\n        ],\n        \"expected\": \"所有免费抽抽乐\",\n        \"action\": \"Click\",\n        \"post_delay\": 2000,\n        \"timeout\": 8000,\n        \"on_error\": [\n            \"GachaFree_Finish\"\n        ],\n        \"next\": [\n            \"GachaFree_Confirm2\"\n        ],\n        \"focus\": \"GA.补丁:装备页一键免费抽\"\n    },\n    \"GachaFree_Confirm2\": {\n        \"recognition\": \"OCR\",\n        \"roi\": [\n            660,\n            398,\n            105,\n            99\n        ],\n        \"expected\": \"确认\",\n        \"action\": \"Click\",\n        \"post_delay\": 3000,\n        \"timeout\": 10000,\n        \"on_error\": [\n            \"GachaFree_Finish\"\n        ],\n        \"next\": [\n            \"GachaFree_Briefing2\",\n            \"[JumpBack]Gacha_Quick_Skip\",\n            \"[JumpBack]Gacha_Quick_5X\",\n            \"GachaFree_Confirm2\"\n        ]\n    },\n    \"GachaFree_Briefing2\": {\n        \"recognition\": \"Or\",\n        \"any_of\": [\n            \"Rec_<Gacha_Quick_Briefing>_Tmp\",\n            \"Rec_<Gacha_Quick_Briefing>_Ocr\"\n        ],\n        \"timeout\": 30000,\n        \"on_error\": [\n            \"GachaFree_Finish\"\n        ],\n        \"next\": [\n            \"GachaFree_Finish\",\n            \"[JumpBack]Global_BackPageHub_Once\"\n        ]\n    },\n    \"GachaFree_Finish\": {\n        \"recognition\": \"And\",\n        \"all_of\": [\n            \"GachaADV_PageEnter_1#\"\n        ],\n        \"action\": \"Click\",\n        \"target\": [\n            120,\n            35\n        ],\n        \"post_delay\": 2500,\n        \"timeout\": 12000,\n        \"on_error\": [\n            \"GachaFree_Abort\"\n        ],\n        \"next\": [\n            \"GachaADV_HomePage_Enter\"\n        ],\n        \"focus\": \"GA.补丁:免费抽收集链完成,交回原流程\"\n    },\n    \"GachaFree_Abort\": {\n        \"focus\": \"[color:red][WRN] GA.补丁收集链异常,交回原流程 [/color]\",\n        \"next\": [\n            \"GachaADV_HomePage_Enter\",\n            \"[JumpBack]Global_ToHomePage\"\n        ]\n    },\n    \"GachaADV_Start\": {"
+        },
+        {
+          "file": "GACHA_ADV.json",
+          "type": "replace",
+          "count": 1,
+          "anchor": "\"GachaADV_Start\": {\n        \"next\": [\n            \"GachaADV_HomePage_Enter\",",
+          "replacement": "\"GachaADV_Start\": {\n        \"next\": [\n            \"GachaFree_Enter\",\n            \"GachaADV_HomePage_Enter\","
+        }
+      ],
+      "verify": "PENDING (2026-10-10 night): solo run of [执行]白嫖抽卡 with the day free pulls already collected manually — expect GachaFree focus lines (enter page -> costume quick absent -> gear tab -> gear quick absent -> finish) then the original gate exit, no loop, no paid clicks. Real-collection verification at the next daily run (stage-4 reads the free counts).",
+      "retire_when": "Upstream removes the home-badge entry gate or natively collects the per-tab free pulls on entry regardless of the home icon badge."
     }
   ]
 }
