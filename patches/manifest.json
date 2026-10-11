@@ -310,6 +310,68 @@
       ],
       "verify": "PENDING: re-run solo [执行]白嫖抽卡 after v2 — expect OnCostume to match via the Or anchor, traverse costume (no quick button today) -> gear tab -> finish -> original gate exit.",
       "retire_when": "Same as gacha-free-nobadge-collect; this delta folds into it."
+    },
+    {
+      "id": "gacha-free-nobadge-collect-v3",
+      "title": "白嫖收集链 v3:缺席判定改 inverse 兄弟节点(即时),去掉候选 timeout 路由",
+      "kind": "shared-fix",
+      "status": "active",
+      "introduced": "2026-10-10",
+      "issue": "https://github.com/sunyink/MFABD2/issues/544",
+      "intent": "v2 实测(maafw 日志):Enter 与 OnCostume(Or 锚点)均在 1 秒内成功,但 QuickCostume 的『无按钮』走了整整 25 秒才失败且 on_error 路由未按预期落到 ToGear(直接 Abort)——候选节点的 timeout/on_error 语义与预期不符。v3 改用上游自身的缺席判定惯例:inverse 识别的兄弟节点(GachaFree_NoQuickCostume / NoQuickGear)与 Quick 节点并列在同一 next 里,页面状态已定时即时二选一,不再依赖 timeout;Quick 节点去掉 on_error;OnCostume 的 on_error 从 Enter2 改回 Abort(Enter2/OnCostume2 自此孤置不用——Enter2 需主页锚点、进页成功后永不命中,设计作废)。Confirm 段维持上游 SubMsg_Ck 式自循环(无 timeout)。",
+      "files": [
+        "GACHA_ADV.json"
+      ],
+      "applied_markers": [
+        {
+          "file": "GACHA_ADV.json",
+          "contains": "\"GachaFree_NoQuickCostume\": {"
+        },
+        {
+          "file": "GACHA_ADV.json",
+          "node": "GachaFree_OnCostume",
+          "contains": "\"GachaFree_NoQuickCostume\""
+        }
+      ],
+      "edits": [
+        {
+          "file": "GACHA_ADV.json",
+          "type": "replace",
+          "count": 1,
+          "anchor": "    \"GachaFree_OnCostume\": {\n        \"recognition\": \"Or\",\n        \"any_of\": [\n            \"GachaADV_PageEnter_1#\",\n            \"GachaADV_GachaPage2\"\n        ],\n        \"timeout\": 25000,\n        \"on_error\": [\n            \"GachaFree_Enter2\"\n        ],\n        \"next\": [\n            \"GachaFree_QuickCostume\"\n        ]\n    },",
+          "replacement": "    \"GachaFree_OnCostume\": {\n        \"recognition\": \"Or\",\n        \"any_of\": [\n            \"GachaADV_PageEnter_1#\",\n            \"GachaADV_GachaPage2\"\n        ],\n        \"timeout\": 25000,\n        \"on_error\": [\n            \"GachaFree_Abort\"\n        ],\n        \"next\": [\n            \"GachaFree_QuickCostume\",\n            \"GachaFree_NoQuickCostume\"\n        ]\n    },"
+        },
+        {
+          "file": "GACHA_ADV.json",
+          "type": "replace",
+          "count": 1,
+          "anchor": "    \"GachaFree_QuickCostume\": {\n        \"recognition\": \"OCR\",\n        \"roi\": [\n            183,\n            596,\n            183,\n            76\n        ],\n        \"expected\": \"所有免费抽抽乐\",\n        \"action\": \"Click\",\n        \"post_delay\": 2000,\n        \"timeout\": 8000,\n        \"on_error\": [\n            \"GachaFree_ToGear\"\n        ],\n        \"next\": [\n            \"GachaFree_Confirm\"\n        ],\n        \"focus\": \"GA.补丁:服装页一键免费抽\"\n    },",
+          "replacement": "    \"GachaFree_QuickCostume\": {\n        \"recognition\": \"OCR\",\n        \"roi\": [\n            183,\n            596,\n            183,\n            76\n        ],\n        \"expected\": \"所有免费抽抽乐\",\n        \"action\": \"Click\",\n        \"post_delay\": 2000,\n        \"next\": [\n            \"GachaFree_Confirm\"\n        ],\n        \"focus\": \"GA.补丁:服装页一键免费抽\"\n    },"
+        },
+        {
+          "file": "GACHA_ADV.json",
+          "type": "replace",
+          "count": 1,
+          "anchor": "    \"GachaFree_QuickGear\": {\n        \"recognition\": \"OCR\",\n        \"roi\": [\n            183,\n            596,\n            183,\n            76\n        ],\n        \"expected\": \"所有免费抽抽乐\",\n        \"action\": \"Click\",\n        \"post_delay\": 2000,\n        \"timeout\": 8000,\n        \"on_error\": [\n            \"GachaFree_Finish\"\n        ],\n        \"next\": [\n            \"GachaFree_Confirm2\"\n        ],\n        \"focus\": \"GA.补丁:装备页一键免费抽\"\n    },",
+          "replacement": "    \"GachaFree_QuickGear\": {\n        \"recognition\": \"OCR\",\n        \"roi\": [\n            183,\n            596,\n            183,\n            76\n        ],\n        \"expected\": \"所有免费抽抽乐\",\n        \"action\": \"Click\",\n        \"post_delay\": 2000,\n        \"next\": [\n            \"GachaFree_Confirm2\"\n        ],\n        \"focus\": \"GA.补丁:装备页一键免费抽\"\n    },"
+        },
+        {
+          "file": "GACHA_ADV.json",
+          "type": "replace",
+          "count": 1,
+          "anchor": "        \"next\": [\n            \"GachaFree_QuickGear\"\n        ],\n        \"focus\": \"GA.补丁:切换装备页签\"",
+          "replacement": "        \"next\": [\n            \"GachaFree_QuickGear\",\n            \"GachaFree_NoQuickGear\"\n        ],\n        \"focus\": \"GA.补丁:切换装备页签\""
+        },
+        {
+          "file": "GACHA_ADV.json",
+          "type": "replace",
+          "count": 1,
+          "anchor": "    \"GachaADV_Start\": {",
+          "replacement": "    \"GachaFree_NoQuickCostume\": {\n        \"recognition\": \"OCR\",\n        \"roi\": [\n            183,\n            596,\n            183,\n            76\n        ],\n        \"expected\": \"所有免费抽抽乐\",\n        \"inverse\": true,\n        \"post_delay\": 500,\n        \"next\": [\n            \"GachaFree_ToGear\"\n        ],\n        \"focus\": \"GA.补丁:服装页无一键免费抽,跳过\"\n    },\n    \"GachaFree_NoQuickGear\": {\n        \"recognition\": \"OCR\",\n        \"roi\": [\n            183,\n            596,\n            183,\n            76\n        ],\n        \"expected\": \"所有免费抽抽乐\",\n        \"inverse\": true,\n        \"post_delay\": 500,\n        \"next\": [\n            \"GachaFree_Finish\"\n        ],\n        \"focus\": \"GA.补丁:装备页无一键免费抽,跳过\"\n    },\n    \"GachaADV_Start\": {"
+        }
+      ],
+      "verify": "PENDING: solo re-run — expect OnCostume -> NoQuickCostume (instant) -> ToGear -> NoQuickGear (instant) -> Finish -> original gate exit, total well under a minute, no Abort.",
+      "retire_when": "Same as gacha-free-nobadge-collect; this delta folds into it."
     }
   ]
 }
