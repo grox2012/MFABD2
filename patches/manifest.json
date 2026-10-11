@@ -1,0 +1,421 @@
+{
+  "schema": 1,
+  "about": "MFABD2 本机补丁清单（机器可读）。补丁不住在部署目录里：本目录（fork 仓库 patches/）是唯一事实源，apply_patches.py 按锚点把补丁重打到任意一份资源树（仓库源码或已安装的发布包）。版本更新后先跑 --check 再 --apply，详见 PATCH_MAINTENANCE.md。",
+  "resource_subdir": "resource/base/pipeline",
+  "source_subdir": "assets/resource/base/pipeline",
+  "patches": [
+    {
+      "id": "pass-enter-wait",
+      "title": "通行证进页等待：Pass_InToPass timeout 5000→30000 + Pass_EnterPass 加 timeout 90000",
+      "kind": "shared-fix",
+      "status": "active",
+      "introduced": "2026-10-10",
+      "issue": "https://github.com/sunyink/MFABD2/issues/544",
+      "intent": "两处等待缺口（同属「页面/转场加载慢于等待窗 → 假绿」家族）：① Pass_EnterPass 原无显式 timeout，点入后页面加载慢（实测 15 秒+）时等待耗尽走 on_error 链，任务 15 秒假绿、领取零执行（2026-10-09）→ 加 90000。② Pass_InToPass 的主页锚点（抽抽乐区 And 识别）原 timeout 仅 5000：前序任务复位后游戏仍在转场加载屏时锚点永不命中，自循环约 18 秒后仍以 ret=true 收场、根本没点进去（2026-10-10 正式运行实证，on_error 截图为 BD2 加载屏）→ 改 30000，配合其自循环 next 容忍长转场。真进不去时 EnterPass 侧落入既有 Global_Null_Panic 链显性失败。",
+      "files": [
+        "Pass.json"
+      ],
+      "applied_markers": [
+        {
+          "file": "Pass.json",
+          "node": "Pass_EnterPass",
+          "contains": "\"timeout\": 90000"
+        },
+        {
+          "file": "Pass.json",
+          "node": "Pass_InToPass",
+          "contains": "\"timeout\": 30000"
+        }
+      ],
+      "edits": [
+        {
+          "file": "Pass.json",
+          "type": "replace",
+          "count": 1,
+          "anchor": "        \"expected\": \"通行证\",\n        \"next\": [\n            \"Pass_SelectPass\",",
+          "replacement": "        \"expected\": \"通行证\",\n        \"timeout\": 90000,\n        \"next\": [\n            \"Pass_SelectPass\","
+        },
+        {
+          "file": "Pass.json",
+          "type": "replace",
+          "count": 1,
+          "anchor": "        \"post_delay\": 1000,\n        \"timeout\": 5000,",
+          "replacement": "        \"post_delay\": 1000,\n        \"timeout\": 30000,"
+        }
+      ],
+      "verify": "VERIFIED 2026-10-10 evening solo run: game started from a stable screen; PM focus chain showed 尝试进入通行证页面 x2 -> 通行证页面确认 -> 点击领取 x2; both passes checked manually afterwards (SPECIAL Lv.03, Loyal Maid Lv.08, Get-All greyed, nothing claimable). Note v1 conclusion revised: the same-evening scheduled run had failed EARLIER at Pass_InToPass during the BD2 loading screen (never reached EnterPass); v2 extends InToPass timeout to 30s for long transitions.",
+      "retire_when": "上游 Pass_EnterPass 自带足够长的显式等待（>=60000）或等效的进页校验，且实机验证通过。"
+    },
+    {
+      "id": "quickhunt-locked-stage-fail",
+      "title": "快速狩猎未解锁关卡显性失败：新增 QuickHunt_LockedStage_Panic",
+      "kind": "shared-fix",
+      "status": "active",
+      "introduced": "2026-10-10",
+      "issue": "https://github.com/sunyink/MFABD2/issues/544",
+      "intent": "所选关卡首领未打时右下按钮是「难度挑战」而非「快速狩猎」，stock 链路全部落空却以成功收场（米饭不动、对话框前空转）。新节点与 QuickHunt_QuickBattleButton 共用按钮 roi [1029,632,89,33]，OCR 到「难度挑战」即 StopTask 并打红色 focus；挂在狩猎场 1/7/9 选关、圣石洞穴 CkDone、冒险航线 DoubleCk1/2 与 RiceRecheck_DoubleCk 的 next 首位。",
+      "files": [
+        "Battle.json"
+      ],
+      "applied_markers": [
+        {
+          "file": "Battle.json",
+          "contains": "\"QuickHunt_LockedStage_Panic\": {"
+        },
+        {
+          "file": "Battle.json",
+          "node": "QuickHunt_CollectMapHuntingGrounds_7",
+          "contains": "\"QuickHunt_LockedStage_Panic\""
+        }
+      ],
+      "edits": [
+        {
+          "file": "Battle.json",
+          "type": "replace",
+          "count": 1,
+          "anchor": "    \"QuickHunt_QuickBattleButton\": {",
+          "replacement": "    \"QuickHunt_LockedStage_Panic\": {\n        \"desc\": \"[本地补丁] 所选关卡未解锁时右下按钮为「难度挑战」而非「快速狩猎」，命中即显性失败，禁止假成功；解锁由每日阶段四按规程处理。见 patches/manifest.json#quickhunt-locked-stage-fail\",\n        \"recognition\": \"OCR\",\n        \"roi\": [\n            1029,\n            632,\n            89,\n            33\n        ],\n        \"expected\": [\n            \"难度挑战\"\n        ],\n        \"timeout\": 2000,\n        \"action\": \"StopTask\",\n        \"focus\": \"[color:red][WRN] 快速狩猎所选关卡未解锁(难度挑战)，任务显性失败 [/color]\"\n    },\n    \"QuickHunt_QuickBattleButton\": {"
+        },
+        {
+          "file": "Battle.json",
+          "type": "replace",
+          "count": 3,
+          "anchor": "        \"next\": [\n            \"QuickHunt_FastBattleMAXTouchHuntingGrounds\",\n            \"[JumpBack]QuickHunt_QuickBattleButton\"\n        ]",
+          "replacement": "        \"next\": [\n            \"QuickHunt_LockedStage_Panic\",\n            \"QuickHunt_FastBattleMAXTouchHuntingGrounds\",\n            \"[JumpBack]QuickHunt_QuickBattleButton\"\n        ]"
+        },
+        {
+          "file": "Battle.json",
+          "type": "replace",
+          "count": 1,
+          "anchor": "        \"next\": [\n            \"QuickHunt_NoAP_Torch\",\n            \"QuickHunt_TurnCharact_Start\",\n            \"QuickHunt_FastBattleMAXTouchCrystalCave\",\n            \"[JumpBack]QuickHunt_QuickBattleButton\"\n        ]",
+          "replacement": "        \"next\": [\n            \"QuickHunt_LockedStage_Panic\",\n            \"QuickHunt_NoAP_Torch\",\n            \"QuickHunt_TurnCharact_Start\",\n            \"QuickHunt_FastBattleMAXTouchCrystalCave\",\n            \"[JumpBack]QuickHunt_QuickBattleButton\"\n        ]"
+        },
+        {
+          "file": "Battle.json",
+          "type": "replace",
+          "count": 3,
+          "anchor": "        \"next\": [\n            \"QuickHunt_NoAP_Rice\",\n            \"QuickHunt_FastBattleMAXTouchAdventureRoute\",\n            \"[JumpBack]QuickHunt_QuickBattleButton\"\n        ]",
+          "replacement": "        \"next\": [\n            \"QuickHunt_LockedStage_Panic\",\n            \"QuickHunt_NoAP_Rice\",\n            \"QuickHunt_FastBattleMAXTouchAdventureRoute\",\n            \"[JumpBack]QuickHunt_QuickBattleButton\"\n        ]"
+        }
+      ],
+      "verify": "两路：① 已解锁关卡单跑快速狩猎正常跑完（无误触发）；② 把任务选项指向一个未解锁关卡单跑，任务不得绿勾，日志出现红色 WRN focus、停在难度挑战按钮/对话框画面。走不到 ② 时按 lifecycle 三态记「未走到」，不得宣称通过。",
+      "retire_when": "上游对未解锁关卡有等效处理（显性失败或自动打首领解锁），且实机验证通过。"
+    },
+    {
+      "id": "event-battle-ismenu-roi",
+      "title": "Event_Battle_IsMenu roi 扩大 [626,235,189,54]→[620,230,490,200]",
+      "kind": "shared-fix",
+      "status": "active-local",
+      "introduced": "2026-10-06",
+      "issue": "https://github.com/sunyink/MFABD2/issues/538",
+      "intent": "赛季活动挑战关详情页的离开判定 roi 太小、识别不到位。上游 issue #538 已提、PR 待验证后跟进；上游 main 仍为旧值 [626,235,189,54]（2026-10-10 核对），已安装发布包同样是旧值，故本地需重打。验证状态：未证成未证伪（2026-10-07 起顺延观察）。",
+      "files": [
+        "EventBattle.json"
+      ],
+      "applied_markers": [
+        {
+          "file": "EventBattle.json",
+          "node": "Event_Battle_IsMenu",
+          "contains": "620,\n            230,\n            490,\n            200"
+        }
+      ],
+      "edits": [
+        {
+          "file": "EventBattle.json",
+          "type": "node_replace",
+          "node": "Event_Battle_IsMenu",
+          "count": 1,
+          "anchor": "\"roi\": [\n            626,\n            235,\n            189,\n            54\n        ]",
+          "replacement": "\"roi\": [\n            620,\n            230,\n            490,\n            200\n        ]"
+        }
+      ],
+      "verify": "正式运行经过挑战关详情页时观察离开判定是否顺畅；结论按三态记录。",
+      "retire_when": "上游合入等效 roi 且已安装发布包自带 [620,230,490,200]，并经实机验证。"
+    },
+    {
+      "id": "global-victory-return",
+      "title": "复位链新增 Global_ToHomePage_VictoryReturn 胜利结算出口",
+      "kind": "shared-fix",
+      "status": "active-local",
+      "introduced": "2026-10-07",
+      "issue": "",
+      "intent": "普通战斗胜利结算屏在 Global_ToHomePage 复位链上没有任何出口，赛季任务打完获胜后在复位环节空转判失败。新增节点 OCR「返回」（roi [800,620,170,65]，target [880,655]，均为 1280×720 参考坐标——切勿写成 1920×1080 设备坐标，v1 就栽在这上面）并挂入 Global_ToHomePage 的 next。验证状态：2026-10-09 正式运行通过。",
+      "files": [
+        "Global.json"
+      ],
+      "applied_markers": [
+        {
+          "file": "Global.json",
+          "contains": "\"Global_ToHomePage_VictoryReturn\": {"
+        },
+        {
+          "file": "Global.json",
+          "node": "Global_ToHomePage",
+          "contains": "\"Global_ToHomePage_VictoryReturn\""
+        }
+      ],
+      "edits": [
+        {
+          "file": "Global.json",
+          "type": "replace",
+          "count": 1,
+          "anchor": "    \"Global_ToHomePage\": {",
+          "replacement": "    \"Global_ToHomePage_VictoryReturn\": {\n        \"desc\": \"[通用复位]战斗胜利结算屏,右下角有返回按钮,点击返回退出结算\",\n        \"recognition\": \"OCR\",\n        \"roi\": [\n            800,\n            620,\n            170,\n            65\n        ],\n        \"expected\": [\n            \"返回\"\n        ],\n        \"action\": \"Click\",\n        \"target\": [\n            880,\n            655\n        ],\n        \"post_delay\": 3000,\n        \"next\": [\n            \"Global_ToHomePage_Enter\",\n            \"Global_ToHomePage\"\n        ],\n        \"focus\": \"GO.胜利结算-点击返回\"\n    },\n    \"Global_ToHomePage\": {"
+        },
+        {
+          "file": "Global.json",
+          "type": "node_replace",
+          "node": "Global_ToHomePage",
+          "count": 1,
+          "anchor": "            \"Global_ToHomePage_HomeButton\",\n",
+          "replacement": "            \"Global_ToHomePage_HomeButton\",\n            \"Global_ToHomePage_VictoryReturn\",\n"
+        }
+      ],
+      "verify": "正式运行中普通战斗获胜后能经 VictoryReturn 离开结算屏回主界面（focus GO.胜利结算-点击返回），2026-10-09 已通过，后续顺延观察。",
+      "retire_when": "上游复位链自带胜利结算出口且实机验证通过。"
+    },
+    {
+      "id": "daily-intimacy-livelock-exit",
+      "title": "谈心活锁出口：全员亲密度达上限时经 AllCapped 双闸检查走 End 打标",
+      "kind": "shared-fix",
+      "status": "active",
+      "introduced": "2026-10-10",
+      "issue": "https://github.com/sunyink/MFABD2/issues/544",
+      "intent": "Daily_Intimacy_CatalogCard 的唯一正常出口是 Daily_Intimacy_Exhausted（剩余谈心次数 OCR 为 0）。当可谈对象全部亲密度达上限（LV MAX）时 Daily_Intimacy_Up（要求 Sub_Intimacy_Number + Sub_Intimacy_LV）永不命中，次数永远到不了 0（2026-10-10 实测剩余 1 次、对象 LV.6 MAX），Set（max 1）/Turn（max 6）双闸先后达上限后模块无任何完成出口，MarkComplete 永不打标，Daily 主 Hub 每轮重新进入谈心模块形成活锁：第一轮空转 18 分 02 秒、自修复补跑再空转 10 分 46 秒，均靠人工停（当晚 [检查拦截] 上限日志 99 条）。补丁在 CatalogCard 的 next 里、Swip 之前插入一条双闸 inverse 检查链（Set 已达上限 且 Turn 已达上限 → Daily_Intimacy_End 打标退出）。安全性：每次 CatalogCard 评估时 Up 都排在该出口之前，可谈对象会被先命中；Turn 达上限意味着全员已轮过一遍，出口只在「全员轮完且无人可谈、次数又未清零」时触发。",
+      "files": [
+        "Daily.json"
+      ],
+      "applied_markers": [
+        {
+          "file": "Daily.json",
+          "contains": "\"Daily_Intimacy_AllCapped_CkSet\": {"
+        },
+        {
+          "file": "Daily.json",
+          "node": "Daily_Intimacy_CatalogCard",
+          "contains": "\"Daily_Intimacy_AllCapped_CkSet\""
+        }
+      ],
+      "edits": [
+        {
+          "file": "Daily.json",
+          "type": "replace",
+          "count": 1,
+          "anchor": "    \"Daily_Intimacy_Switch_Set\": {",
+          "replacement": "    \"Daily_Intimacy_AllCapped_CkSet\": {\n        \"desc\": \"[本地补丁] 谈心活锁出口（前段）：Set 闸已达上限（inverse 命中）才继续。见 patches/manifest.json#daily-intimacy-livelock-exit\",\n        \"recognition\": \"Custom\",\n        \"custom_recognition\": \"CheckTag\",\n        \"custom_recognition_param\": {\n            \"tag\": \"Intimacy_Switch_Set\",\n            \"max\": 1\n        },\n        \"inverse\": true,\n        \"next\": [\n            \"Daily_Intimacy_AllCapped_CkTurn\"\n        ]\n    },\n    \"Daily_Intimacy_AllCapped_CkTurn\": {\n        \"desc\": \"[本地补丁] 谈心活锁出口（后段）：Turn 闸也达上限（全员已轮过一遍且无人可谈、剩余次数又不到 0）→ 走 Daily_Intimacy_End 打标退出，禁止活锁\",\n        \"recognition\": \"Custom\",\n        \"custom_recognition\": \"CheckTag\",\n        \"custom_recognition_param\": {\n            \"tag\": \"Intimacy_Switch_Turn\",\n            \"max\": 6\n        },\n        \"inverse\": true,\n        \"next\": [\n            \"Daily_Intimacy_End\"\n        ],\n        \"focus\": \"[color:red][WRN] 谈心全员已达上限但仍有剩余次数，走补丁出口打标完成 [/color]\"\n    },\n    \"Daily_Intimacy_Switch_Set\": {"
+        },
+        {
+          "file": "Daily.json",
+          "type": "replace",
+          "count": 1,
+          "anchor": "\"[JumpBack]Daily_Intimacy_Switch_Turn\",\n            \"Daily_Intimacy_Swip\"",
+          "replacement": "\"[JumpBack]Daily_Intimacy_Switch_Turn\",\n            \"Daily_Intimacy_AllCapped_CkSet\",\n            \"Daily_Intimacy_Swip\""
+        }
+      ],
+      "verify": "VERIFIED 2026-10-10 evening solo run of [领取]日常任务: intimacy module cycled partners (Turn 3->6, Set 1/1 capped), then focus line 谈心全员已达上限但仍有剩余次数，走补丁出口打标完成 fired, Daily_Intimacy@g_daily completion mark written, task finished and queue advanced; whole Daily task took ~2m54s vs 18m03s livelock in the scheduled run. Remaining talk count was 1 at patch time (spent manually afterwards on 提尔, count now 0).",
+      "retire_when": "上游给谈心模块补了等效的「全员上限」完成出口且实机验证通过。"
+    },
+    {
+      "id": "gacha-free-nobadge-collect",
+      "title": "白嫖抽卡去红点门：无视主页图标红点，进页逐页签一键收服装/装备免费抽",
+      "kind": "shared-fix",
+      "status": "active",
+      "introduced": "2026-10-10",
+      "issue": "https://github.com/sunyink/MFABD2/issues/544",
+      "intent": "GachaADV 入口 GachaADV_HomePage_Enter 只在主页抽抽乐图标带红点（RedDotDetector 命中 GachaADV_GachaRed_Have）时才进页，无红点即以「无可关注抽抽乐」退出。但 2026-10-10 实测主页图标无红点时，页内服装/装备两页签各有 3 次每日免费抽未领，任务 2 秒空转退出、6 次免费抽（约合 6 张红票）险些漏掉（当晚靠人工补抽）。补丁给 GachaADV_Start 前置一条自控收集链 GachaFree_*：在主页无条件点图标进页，在服装页签找「所有免费抽抽乐」一键收集（确认→跳过动画→结算），再切装备页签同样收集一次，最后返回主页把控制权交回原 GachaADV_HomePage_Enter（原红点门与逐池 ADV 流程保持不变，作为第二层）。可选节点（Quick/Confirm/Briefing）均带 timeout + on_error 降级路线：无可收时逐级跳过、异常时经 GachaFree_Abort 回原流程，不挂死、不触碰任何付费抽按钮。",
+      "files": [
+        "GACHA_ADV.json"
+      ],
+      "applied_markers": [
+        {
+          "file": "GACHA_ADV.json",
+          "contains": "\"GachaFree_Enter\": {"
+        },
+        {
+          "file": "GACHA_ADV.json",
+          "node": "GachaADV_Start",
+          "contains": "\"GachaFree_Enter\""
+        }
+      ],
+      "edits": [
+        {
+          "file": "GACHA_ADV.json",
+          "type": "replace",
+          "count": 1,
+          "anchor": "    \"GachaADV_Start\": {",
+          "replacement": "    \"GachaFree_Enter\": {\n        \"recognition\": \"And\",\n        \"all_of\": [\n            \"Rec_HomePage_GA_Ocr\",\n            \"Sub_HomePage_GA_Bright_Clr\"\n        ],\n        \"action\": \"Click\",\n        \"target\": [\n            129,\n            642\n        ],\n        \"post_delay\": 3500,\n        \"next\": [\n            \"GachaFree_OnCostume\"\n        ],\n        \"focus\": \"GA.补丁:无视主页红点直接进页收集免费抽\"\n    },\n    \"GachaFree_OnCostume\": {\n        \"recognition\": \"And\",\n        \"all_of\": [\n            \"GachaADV_PageEnter_1#\"\n        ],\n        \"timeout\": 25000,\n        \"on_error\": [\n            \"GachaFree_Abort\"\n        ],\n        \"next\": [\n            \"GachaFree_QuickCostume\"\n        ]\n    },\n    \"GachaFree_QuickCostume\": {\n        \"recognition\": \"OCR\",\n        \"roi\": [\n            183,\n            596,\n            183,\n            76\n        ],\n        \"expected\": \"所有免费抽抽乐\",\n        \"action\": \"Click\",\n        \"post_delay\": 2000,\n        \"timeout\": 8000,\n        \"on_error\": [\n            \"GachaFree_ToGear\"\n        ],\n        \"next\": [\n            \"GachaFree_Confirm\"\n        ],\n        \"focus\": \"GA.补丁:服装页一键免费抽\"\n    },\n    \"GachaFree_Confirm\": {\n        \"recognition\": \"OCR\",\n        \"roi\": [\n            660,\n            398,\n            105,\n            99\n        ],\n        \"expected\": \"确认\",\n        \"action\": \"Click\",\n        \"post_delay\": 3000,\n        \"timeout\": 10000,\n        \"on_error\": [\n            \"GachaFree_ToGear\"\n        ],\n        \"next\": [\n            \"GachaFree_Briefing\",\n            \"[JumpBack]Gacha_Quick_Skip\",\n            \"[JumpBack]Gacha_Quick_5X\",\n            \"GachaFree_Confirm\"\n        ]\n    },\n    \"GachaFree_Briefing\": {\n        \"recognition\": \"Or\",\n        \"any_of\": [\n            \"Rec_<Gacha_Quick_Briefing>_Tmp\",\n            \"Rec_<Gacha_Quick_Briefing>_Ocr\"\n        ],\n        \"timeout\": 30000,\n        \"on_error\": [\n            \"GachaFree_ToGear\"\n        ],\n        \"next\": [\n            \"GachaFree_ToGear\",\n            \"[JumpBack]Global_BackPageHub_Once\"\n        ]\n    },\n    \"GachaFree_ToGear\": {\n        \"recognition\": \"And\",\n        \"all_of\": [\n            \"GachaADV_PageEnter_1#\"\n        ],\n        \"action\": \"Click\",\n        \"target\": [\n            138,\n            265\n        ],\n        \"post_delay\": 2000,\n        \"timeout\": 12000,\n        \"on_error\": [\n            \"GachaFree_Finish\"\n        ],\n        \"next\": [\n            \"GachaFree_QuickGear\"\n        ],\n        \"focus\": \"GA.补丁:切换装备页签\"\n    },\n    \"GachaFree_QuickGear\": {\n        \"recognition\": \"OCR\",\n        \"roi\": [\n            183,\n            596,\n            183,\n            76\n        ],\n        \"expected\": \"所有免费抽抽乐\",\n        \"action\": \"Click\",\n        \"post_delay\": 2000,\n        \"timeout\": 8000,\n        \"on_error\": [\n            \"GachaFree_Finish\"\n        ],\n        \"next\": [\n            \"GachaFree_Confirm2\"\n        ],\n        \"focus\": \"GA.补丁:装备页一键免费抽\"\n    },\n    \"GachaFree_Confirm2\": {\n        \"recognition\": \"OCR\",\n        \"roi\": [\n            660,\n            398,\n            105,\n            99\n        ],\n        \"expected\": \"确认\",\n        \"action\": \"Click\",\n        \"post_delay\": 3000,\n        \"timeout\": 10000,\n        \"on_error\": [\n            \"GachaFree_Finish\"\n        ],\n        \"next\": [\n            \"GachaFree_Briefing2\",\n            \"[JumpBack]Gacha_Quick_Skip\",\n            \"[JumpBack]Gacha_Quick_5X\",\n            \"GachaFree_Confirm2\"\n        ]\n    },\n    \"GachaFree_Briefing2\": {\n        \"recognition\": \"Or\",\n        \"any_of\": [\n            \"Rec_<Gacha_Quick_Briefing>_Tmp\",\n            \"Rec_<Gacha_Quick_Briefing>_Ocr\"\n        ],\n        \"timeout\": 30000,\n        \"on_error\": [\n            \"GachaFree_Finish\"\n        ],\n        \"next\": [\n            \"GachaFree_Finish\",\n            \"[JumpBack]Global_BackPageHub_Once\"\n        ]\n    },\n    \"GachaFree_Finish\": {\n        \"recognition\": \"And\",\n        \"all_of\": [\n            \"GachaADV_PageEnter_1#\"\n        ],\n        \"action\": \"Click\",\n        \"target\": [\n            120,\n            35\n        ],\n        \"post_delay\": 2500,\n        \"timeout\": 12000,\n        \"on_error\": [\n            \"GachaFree_Abort\"\n        ],\n        \"next\": [\n            \"GachaADV_HomePage_Enter\"\n        ],\n        \"focus\": \"GA.补丁:免费抽收集链完成,交回原流程\"\n    },\n    \"GachaFree_Abort\": {\n        \"focus\": \"[color:red][WRN] GA.补丁收集链异常,交回原流程 [/color]\",\n        \"next\": [\n            \"GachaADV_HomePage_Enter\",\n            \"[JumpBack]Global_ToHomePage\"\n        ]\n    },\n    \"GachaADV_Start\": {"
+        },
+        {
+          "file": "GACHA_ADV.json",
+          "type": "replace",
+          "count": 1,
+          "anchor": "\"GachaADV_Start\": {\n        \"next\": [\n            \"GachaADV_HomePage_Enter\",",
+          "replacement": "\"GachaADV_Start\": {\n        \"next\": [\n            \"GachaFree_Enter\",\n            \"GachaADV_HomePage_Enter\","
+        }
+      ],
+      "verify": "PENDING (2026-10-10 night): solo run of [执行]白嫖抽卡 with the day free pulls already collected manually — expect GachaFree focus lines (enter page -> costume quick absent -> gear tab -> gear quick absent -> finish) then the original gate exit, no loop, no paid clicks. Real-collection verification at the next daily run (stage-4 reads the free counts).",
+      "retire_when": "Upstream removes the home-badge entry gate or natively collects the per-tab free pulls on entry regardless of the home icon badge."
+    },
+    {
+      "id": "gacha-free-nobadge-collect-v2",
+      "title": "白嫖收集链 v2:页内锚点改 Or(PageEnter_1#/GachaPage2)+进页失败重试一次",
+      "kind": "shared-fix",
+      "status": "active",
+      "introduced": "2026-10-10",
+      "issue": "https://github.com/sunyink/MFABD2/issues/544",
+      "intent": "补丁 #6 首跑实测:图标点击成功打开服装抽抽乐页(on_error 截图为证),但 GachaFree_OnCostume 单靠 GachaADV_PageEnter_1# 的 OCR 锚点 25 秒未命中而降级 Abort——该锚点在本期 Pickup 版面下不可靠。v2 把收集链三个页内锚点(OnCostume/ToGear/Finish)改为 Or[GachaADV_PageEnter_1#, GachaADV_GachaPage2](后者是上游为偏右版面准备的『兑换』OCR 锚点),并给进页加一次重试(Enter2/OnCostume2),第二次仍失败才 Abort 交回原流程。",
+      "files": [
+        "GACHA_ADV.json"
+      ],
+      "applied_markers": [
+        {
+          "file": "GACHA_ADV.json",
+          "contains": "\"GachaFree_Enter2\": {"
+        },
+        {
+          "file": "GACHA_ADV.json",
+          "node": "GachaFree_OnCostume",
+          "contains": "\"GachaFree_Enter2\""
+        }
+      ],
+      "edits": [
+        {
+          "file": "GACHA_ADV.json",
+          "type": "replace",
+          "count": 1,
+          "anchor": "    \"GachaFree_OnCostume\": {\n        \"recognition\": \"And\",\n        \"all_of\": [\n            \"GachaADV_PageEnter_1#\"\n        ],\n        \"timeout\": 25000,\n        \"on_error\": [\n            \"GachaFree_Abort\"\n        ],\n        \"next\": [\n            \"GachaFree_QuickCostume\"\n        ]\n    },",
+          "replacement": "    \"GachaFree_OnCostume\": {\n        \"recognition\": \"Or\",\n        \"any_of\": [\n            \"GachaADV_PageEnter_1#\",\n            \"GachaADV_GachaPage2\"\n        ],\n        \"timeout\": 25000,\n        \"on_error\": [\n            \"GachaFree_Enter2\"\n        ],\n        \"next\": [\n            \"GachaFree_QuickCostume\"\n        ]\n    },"
+        },
+        {
+          "file": "GACHA_ADV.json",
+          "type": "replace",
+          "count": 1,
+          "anchor": "    \"GachaADV_Start\": {",
+          "replacement": "    \"GachaFree_Enter2\": {\n        \"recognition\": \"And\",\n        \"all_of\": [\n            \"Rec_HomePage_GA_Ocr\",\n            \"Sub_HomePage_GA_Bright_Clr\"\n        ],\n        \"action\": \"Click\",\n        \"target\": [\n            129,\n            642\n        ],\n        \"post_delay\": 3500,\n        \"next\": [\n            \"GachaFree_OnCostume2\"\n        ],\n        \"focus\": \"GA.补丁:进页重试(第二次点击图标)\"\n    },\n    \"GachaFree_OnCostume2\": {\n        \"recognition\": \"Or\",\n        \"any_of\": [\n            \"GachaADV_PageEnter_1#\",\n            \"GachaADV_GachaPage2\"\n        ],\n        \"timeout\": 25000,\n        \"on_error\": [\n            \"GachaFree_Abort\"\n        ],\n        \"next\": [\n            \"GachaFree_QuickCostume\"\n        ]\n    },\n    \"GachaADV_Start\": {"
+        },
+        {
+          "file": "GACHA_ADV.json",
+          "type": "replace",
+          "count": 1,
+          "anchor": "    \"GachaFree_ToGear\": {\n        \"recognition\": \"And\",\n        \"all_of\": [\n            \"GachaADV_PageEnter_1#\"\n        ],",
+          "replacement": "    \"GachaFree_ToGear\": {\n        \"recognition\": \"Or\",\n        \"any_of\": [\n            \"GachaADV_PageEnter_1#\",\n            \"GachaADV_GachaPage2\"\n        ],"
+        },
+        {
+          "file": "GACHA_ADV.json",
+          "type": "replace",
+          "count": 1,
+          "anchor": "    \"GachaFree_Finish\": {\n        \"recognition\": \"And\",\n        \"all_of\": [\n            \"GachaADV_PageEnter_1#\"\n        ],",
+          "replacement": "    \"GachaFree_Finish\": {\n        \"recognition\": \"Or\",\n        \"any_of\": [\n            \"GachaADV_PageEnter_1#\",\n            \"GachaADV_GachaPage2\"\n        ],"
+        }
+      ],
+      "verify": "PENDING: re-run solo [执行]白嫖抽卡 after v2 — expect OnCostume to match via the Or anchor, traverse costume (no quick button today) -> gear tab -> finish -> original gate exit.",
+      "retire_when": "Same as gacha-free-nobadge-collect; this delta folds into it."
+    },
+    {
+      "id": "gacha-free-nobadge-collect-v3",
+      "title": "白嫖收集链 v3:缺席判定改 inverse 兄弟节点(即时),去掉候选 timeout 路由",
+      "kind": "shared-fix",
+      "status": "active",
+      "introduced": "2026-10-10",
+      "issue": "https://github.com/sunyink/MFABD2/issues/544",
+      "intent": "v2 实测(maafw 日志):Enter 与 OnCostume(Or 锚点)均在 1 秒内成功,但 QuickCostume 的『无按钮』走了整整 25 秒才失败且 on_error 路由未按预期落到 ToGear(直接 Abort)——候选节点的 timeout/on_error 语义与预期不符。v3 改用上游自身的缺席判定惯例:inverse 识别的兄弟节点(GachaFree_NoQuickCostume / NoQuickGear)与 Quick 节点并列在同一 next 里,页面状态已定时即时二选一,不再依赖 timeout;Quick 节点去掉 on_error;OnCostume 的 on_error 从 Enter2 改回 Abort(Enter2/OnCostume2 自此孤置不用——Enter2 需主页锚点、进页成功后永不命中,设计作废)。Confirm 段维持上游 SubMsg_Ck 式自循环(无 timeout)。",
+      "files": [
+        "GACHA_ADV.json"
+      ],
+      "applied_markers": [
+        {
+          "file": "GACHA_ADV.json",
+          "contains": "\"GachaFree_NoQuickCostume\": {"
+        },
+        {
+          "file": "GACHA_ADV.json",
+          "node": "GachaFree_OnCostume",
+          "contains": "\"GachaFree_NoQuickCostume\""
+        }
+      ],
+      "edits": [
+        {
+          "file": "GACHA_ADV.json",
+          "type": "replace",
+          "count": 1,
+          "anchor": "    \"GachaFree_OnCostume\": {\n        \"recognition\": \"Or\",\n        \"any_of\": [\n            \"GachaADV_PageEnter_1#\",\n            \"GachaADV_GachaPage2\"\n        ],\n        \"timeout\": 25000,\n        \"on_error\": [\n            \"GachaFree_Enter2\"\n        ],\n        \"next\": [\n            \"GachaFree_QuickCostume\"\n        ]\n    },",
+          "replacement": "    \"GachaFree_OnCostume\": {\n        \"recognition\": \"Or\",\n        \"any_of\": [\n            \"GachaADV_PageEnter_1#\",\n            \"GachaADV_GachaPage2\"\n        ],\n        \"timeout\": 25000,\n        \"on_error\": [\n            \"GachaFree_Abort\"\n        ],\n        \"next\": [\n            \"GachaFree_QuickCostume\",\n            \"GachaFree_NoQuickCostume\"\n        ]\n    },"
+        },
+        {
+          "file": "GACHA_ADV.json",
+          "type": "replace",
+          "count": 1,
+          "anchor": "    \"GachaFree_QuickCostume\": {\n        \"recognition\": \"OCR\",\n        \"roi\": [\n            183,\n            596,\n            183,\n            76\n        ],\n        \"expected\": \"所有免费抽抽乐\",\n        \"action\": \"Click\",\n        \"post_delay\": 2000,\n        \"timeout\": 8000,\n        \"on_error\": [\n            \"GachaFree_ToGear\"\n        ],\n        \"next\": [\n            \"GachaFree_Confirm\"\n        ],\n        \"focus\": \"GA.补丁:服装页一键免费抽\"\n    },",
+          "replacement": "    \"GachaFree_QuickCostume\": {\n        \"recognition\": \"OCR\",\n        \"roi\": [\n            183,\n            596,\n            183,\n            76\n        ],\n        \"expected\": \"所有免费抽抽乐\",\n        \"action\": \"Click\",\n        \"post_delay\": 2000,\n        \"next\": [\n            \"GachaFree_Confirm\"\n        ],\n        \"focus\": \"GA.补丁:服装页一键免费抽\"\n    },"
+        },
+        {
+          "file": "GACHA_ADV.json",
+          "type": "replace",
+          "count": 1,
+          "anchor": "    \"GachaFree_QuickGear\": {\n        \"recognition\": \"OCR\",\n        \"roi\": [\n            183,\n            596,\n            183,\n            76\n        ],\n        \"expected\": \"所有免费抽抽乐\",\n        \"action\": \"Click\",\n        \"post_delay\": 2000,\n        \"timeout\": 8000,\n        \"on_error\": [\n            \"GachaFree_Finish\"\n        ],\n        \"next\": [\n            \"GachaFree_Confirm2\"\n        ],\n        \"focus\": \"GA.补丁:装备页一键免费抽\"\n    },",
+          "replacement": "    \"GachaFree_QuickGear\": {\n        \"recognition\": \"OCR\",\n        \"roi\": [\n            183,\n            596,\n            183,\n            76\n        ],\n        \"expected\": \"所有免费抽抽乐\",\n        \"action\": \"Click\",\n        \"post_delay\": 2000,\n        \"next\": [\n            \"GachaFree_Confirm2\"\n        ],\n        \"focus\": \"GA.补丁:装备页一键免费抽\"\n    },"
+        },
+        {
+          "file": "GACHA_ADV.json",
+          "type": "replace",
+          "count": 1,
+          "anchor": "        \"next\": [\n            \"GachaFree_QuickGear\"\n        ],\n        \"focus\": \"GA.补丁:切换装备页签\"",
+          "replacement": "        \"next\": [\n            \"GachaFree_QuickGear\",\n            \"GachaFree_NoQuickGear\"\n        ],\n        \"focus\": \"GA.补丁:切换装备页签\""
+        },
+        {
+          "file": "GACHA_ADV.json",
+          "type": "replace",
+          "count": 1,
+          "anchor": "    \"GachaADV_Start\": {",
+          "replacement": "    \"GachaFree_NoQuickCostume\": {\n        \"recognition\": \"OCR\",\n        \"roi\": [\n            183,\n            596,\n            183,\n            76\n        ],\n        \"expected\": \"所有免费抽抽乐\",\n        \"inverse\": true,\n        \"post_delay\": 500,\n        \"next\": [\n            \"GachaFree_ToGear\"\n        ],\n        \"focus\": \"GA.补丁:服装页无一键免费抽,跳过\"\n    },\n    \"GachaFree_NoQuickGear\": {\n        \"recognition\": \"OCR\",\n        \"roi\": [\n            183,\n            596,\n            183,\n            76\n        ],\n        \"expected\": \"所有免费抽抽乐\",\n        \"inverse\": true,\n        \"post_delay\": 500,\n        \"next\": [\n            \"GachaFree_Finish\"\n        ],\n        \"focus\": \"GA.补丁:装备页无一键免费抽,跳过\"\n    },\n    \"GachaADV_Start\": {"
+        }
+      ],
+      "verify": "PENDING: solo re-run — expect OnCostume -> NoQuickCostume (instant) -> ToGear -> NoQuickGear (instant) -> Finish -> original gate exit, total well under a minute, no Abort.",
+      "retire_when": "Same as gacha-free-nobadge-collect; this delta folds into it."
+    },
+    {
+      "id": "gacha-free-nobadge-collect-v4",
+      "title": "白嫖收集链 v4:页内锚点等待预算放宽(冷启动首进页加载慢)",
+      "kind": "shared-fix",
+      "status": "active",
+      "introduced": "2026-10-10",
+      "issue": "https://github.com/sunyink/MFABD2/issues/544",
+      "intent": "v3 实测:冷启动(启动脚本重拉 App)后首进抽抽乐页,OnCostume 的 Or 锚点 25 秒内始终未命中而 Abort;而 v2 在页面已预热时同一锚点 0.6 秒命中——首进页的版面元素(兑换/查看概率)渲染明显慢于 25 秒预算。v4 把 OnCostume 等待放宽到 90000、ToGear/Finish 放宽到 30000,其余不变。",
+      "files": [
+        "GACHA_ADV.json"
+      ],
+      "applied_markers": [
+        {
+          "file": "GACHA_ADV.json",
+          "node": "GachaFree_OnCostume",
+          "contains": "\"timeout\": 90000"
+        }
+      ],
+      "edits": [
+        {
+          "file": "GACHA_ADV.json",
+          "type": "replace",
+          "count": 1,
+          "anchor": "    \"GachaFree_OnCostume\": {\n        \"recognition\": \"Or\",\n        \"any_of\": [\n            \"GachaADV_PageEnter_1#\",\n            \"GachaADV_GachaPage2\"\n        ],\n        \"timeout\": 25000,",
+          "replacement": "    \"GachaFree_OnCostume\": {\n        \"recognition\": \"Or\",\n        \"any_of\": [\n            \"GachaADV_PageEnter_1#\",\n            \"GachaADV_GachaPage2\"\n        ],\n        \"timeout\": 90000,"
+        },
+        {
+          "file": "GACHA_ADV.json",
+          "type": "replace",
+          "count": 1,
+          "anchor": "\"post_delay\": 2000,\n        \"timeout\": 12000,",
+          "replacement": "\"post_delay\": 2000,\n        \"timeout\": 30000,"
+        },
+        {
+          "file": "GACHA_ADV.json",
+          "type": "replace",
+          "count": 1,
+          "anchor": "\"post_delay\": 2500,\n        \"timeout\": 12000,",
+          "replacement": "\"post_delay\": 2500,\n        \"timeout\": 30000,"
+        }
+      ],
+      "verify": "PENDING: cold solo re-run — expect OnCostume to match within the widened budget and the chain to traverse both tabs and hand back.",
+      "retire_when": "Same as gacha-free-nobadge-collect; this delta folds into it."
+    }
+  ]
+}
