@@ -416,6 +416,54 @@
       ],
       "verify": "PENDING: cold solo re-run — expect OnCostume to match within the widened budget and the chain to traverse both tabs and hand back.",
       "retire_when": "Same as gacha-free-nobadge-collect; this delta folds into it."
+    },
+    {
+      "id": "gacha-free-nobadge-collect-v5",
+      "title": "白嫖收集链 v5:缺席判定改 And 包裹的 inverse(对齐 HaveNot 既证惯例)",
+      "kind": "shared-fix",
+      "status": "active",
+      "introduced": "2026-10-10",
+      "issue": "https://github.com/sunyink/MFABD2/issues/544",
+      "intent": "v3/v4 实测(maafw recognize_list 铁证):运行时 OnCostume 的 next 只剩 QuickCostume——直接 OCR+inverse 的 NoQuick 节点被解析器静默丢弃,从未被评估。上游同类惯例是 And 包裹引用再 inverse(GachaADV_GachaRed_HaveNot;SkipPV 的 expected 亦为数组)。v5 新增识别专用节点 GachaFree_QuickBtnRec(OCR,expected 数组),两个 NoQuick 节点改为 And[QuickBtnRec]+inverse,形状与 HaveNot 完全一致。",
+      "files": [
+        "GACHA_ADV.json"
+      ],
+      "applied_markers": [
+        {
+          "file": "GACHA_ADV.json",
+          "contains": "\"GachaFree_QuickBtnRec\": {"
+        },
+        {
+          "file": "GACHA_ADV.json",
+          "node": "GachaFree_NoQuickCostume",
+          "contains": "\"GachaFree_QuickBtnRec\""
+        }
+      ],
+      "edits": [
+        {
+          "file": "GACHA_ADV.json",
+          "type": "replace",
+          "count": 1,
+          "anchor": "    \"GachaFree_NoQuickCostume\": {\n        \"recognition\": \"OCR\",\n        \"roi\": [\n            183,\n            596,\n            183,\n            76\n        ],\n        \"expected\": \"所有免费抽抽乐\",\n        \"inverse\": true,\n        \"post_delay\": 500,\n        \"next\": [\n            \"GachaFree_ToGear\"\n        ],\n        \"focus\": \"GA.补丁:服装页无一键免费抽,跳过\"\n    }",
+          "replacement": "    \"GachaFree_NoQuickCostume\": {\n        \"recognition\": \"And\",\n        \"all_of\": [\n            \"GachaFree_QuickBtnRec\"\n        ],\n        \"inverse\": true,\n        \"post_delay\": 500,\n        \"next\": [\n            \"GachaFree_ToGear\"\n        ],\n        \"focus\": \"GA.补丁:服装页无一键免费抽,跳过\"\n    }"
+        },
+        {
+          "file": "GACHA_ADV.json",
+          "type": "replace",
+          "count": 1,
+          "anchor": "    \"GachaFree_NoQuickGear\": {\n        \"recognition\": \"OCR\",\n        \"roi\": [\n            183,\n            596,\n            183,\n            76\n        ],\n        \"expected\": \"所有免费抽抽乐\",\n        \"inverse\": true,\n        \"post_delay\": 500,\n        \"next\": [\n            \"GachaFree_Finish\"\n        ],\n        \"focus\": \"GA.补丁:装备页无一键免费抽,跳过\"\n    }",
+          "replacement": "    \"GachaFree_NoQuickGear\": {\n        \"recognition\": \"And\",\n        \"all_of\": [\n            \"GachaFree_QuickBtnRec\"\n        ],\n        \"inverse\": true,\n        \"post_delay\": 500,\n        \"next\": [\n            \"GachaFree_Finish\"\n        ],\n        \"focus\": \"GA.补丁:装备页无一键免费抽,跳过\"\n    }"
+        },
+        {
+          "file": "GACHA_ADV.json",
+          "type": "replace",
+          "count": 1,
+          "anchor": "    \"GachaADV_Start\": {",
+          "replacement": "    \"GachaFree_QuickBtnRec\": {\n        \"recognition\": \"OCR\",\n        \"roi\": [\n            183,\n            596,\n            183,\n            76\n        ],\n        \"expected\": [\n            \"所有免费抽抽乐\"\n        ]\n    },\n    \"GachaADV_Start\": {"
+        }
+      ],
+      "verify": "PENDING: solo re-run — expect recognize_list for OnCostume to include NoQuickCostume and the chain to traverse both tabs instantly on absence.",
+      "retire_when": "Same as gacha-free-nobadge-collect; this delta folds into it."
     }
   ]
 }
