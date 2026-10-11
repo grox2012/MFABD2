@@ -43,7 +43,7 @@
           "replacement": "        \"post_delay\": 1000,\n        \"timeout\": 30000,"
         }
       ],
-      "verify": "单跑或正式运行 [领取]通行证奖励：须真实进入通行证页（focus 出现 PM.通行证页面确认→选择通行证→点击领取链）；2026-10-10 正式运行未走到（死在 InToPass 锚点，见 intent ②，补丁已据此扩围，待下轮运行验证）。",
+      "verify": "VERIFIED 2026-10-10 evening solo run: game started from a stable screen; PM focus chain showed 尝试进入通行证页面 x2 -> 通行证页面确认 -> 点击领取 x2; both passes checked manually afterwards (SPECIAL Lv.03, Loyal Maid Lv.08, Get-All greyed, nothing claimable). Note v1 conclusion revised: the same-evening scheduled run had failed EARLIER at Pass_InToPass during the BD2 loading screen (never reached EnterPass); v2 extends InToPass timeout to 30s for long transitions.",
       "retire_when": "上游 Pass_EnterPass 自带足够长的显式等待（>=60000）或等效的进页校验，且实机验证通过。"
     },
     {
@@ -212,7 +212,7 @@
           "replacement": "\"[JumpBack]Daily_Intimacy_Switch_Turn\",\n            \"Daily_Intimacy_AllCapped_CkSet\",\n            \"Daily_Intimacy_Swip\""
         }
       ],
-      "verify": "在「仍有剩余谈心次数且对象全达上限」的状态下单跑 [领取]日常任务：谈心模块应经 AllCapped 出口打标退出（日志出现补丁 focus），整个任务在数分钟内完成、其后模块（广场等）正常执行，不再出现 [检查拦截] 上限日志轮转。正常日（有可谈对象）也须顺延观察一次，确认谈心照常进行、出口不误触发。",
+      "verify": "VERIFIED 2026-10-10 evening solo run of [领取]日常任务: intimacy module cycled partners (Turn 3->6, Set 1/1 capped), then focus line 谈心全员已达上限但仍有剩余次数，走补丁出口打标完成 fired, Daily_Intimacy@g_daily completion mark written, task finished and queue advanced; whole Daily task took ~2m54s vs 18m03s livelock in the scheduled run. Remaining talk count was 1 at patch time (spent manually afterwards on 提尔, count now 0).",
       "retire_when": "上游给谈心模块补了等效的「全员上限」完成出口且实机验证通过。"
     }
   ]
