@@ -253,7 +253,7 @@
           "replacement": "\"GachaADV_Start\": {\n        \"next\": [\n            \"GachaFree_Enter\",\n            \"GachaADV_HomePage_Enter\","
         }
       ],
-      "verify": "PENDING (2026-10-10 night): solo run of [执行]白嫖抽卡 with the day free pulls already collected manually — expect GachaFree focus lines (enter page -> costume quick absent -> gear tab -> gear quick absent -> finish) then the original gate exit, no loop, no paid clicks. Real-collection verification at the next daily run (stage-4 reads the free counts).",
+      "verify": "SUPERSEDED by gacha-free-nobadge-collect-v6 (verified 2026-10-10). Kept for audit; do not re-apply deltas out of order.",
       "retire_when": "Upstream removes the home-badge entry gate or natively collects the per-tab free pulls on entry regardless of the home icon badge."
     },
     {
@@ -308,7 +308,7 @@
           "replacement": "    \"GachaFree_Finish\": {\n        \"recognition\": \"Or\",\n        \"any_of\": [\n            \"GachaADV_PageEnter_1#\",\n            \"GachaADV_GachaPage2\"\n        ],"
         }
       ],
-      "verify": "PENDING: re-run solo [执行]白嫖抽卡 after v2 — expect OnCostume to match via the Or anchor, traverse costume (no quick button today) -> gear tab -> finish -> original gate exit.",
+      "verify": "SUPERSEDED by gacha-free-nobadge-collect-v6 (verified 2026-10-10). Kept for audit; do not re-apply deltas out of order.",
       "retire_when": "Same as gacha-free-nobadge-collect; this delta folds into it."
     },
     {
@@ -370,7 +370,7 @@
           "replacement": "    \"GachaFree_NoQuickCostume\": {\n        \"recognition\": \"OCR\",\n        \"roi\": [\n            183,\n            596,\n            183,\n            76\n        ],\n        \"expected\": \"所有免费抽抽乐\",\n        \"inverse\": true,\n        \"post_delay\": 500,\n        \"next\": [\n            \"GachaFree_ToGear\"\n        ],\n        \"focus\": \"GA.补丁:服装页无一键免费抽,跳过\"\n    },\n    \"GachaFree_NoQuickGear\": {\n        \"recognition\": \"OCR\",\n        \"roi\": [\n            183,\n            596,\n            183,\n            76\n        ],\n        \"expected\": \"所有免费抽抽乐\",\n        \"inverse\": true,\n        \"post_delay\": 500,\n        \"next\": [\n            \"GachaFree_Finish\"\n        ],\n        \"focus\": \"GA.补丁:装备页无一键免费抽,跳过\"\n    },\n    \"GachaADV_Start\": {"
         }
       ],
-      "verify": "PENDING: solo re-run — expect OnCostume -> NoQuickCostume (instant) -> ToGear -> NoQuickGear (instant) -> Finish -> original gate exit, total well under a minute, no Abort.",
+      "verify": "SUPERSEDED by gacha-free-nobadge-collect-v6 (verified 2026-10-10). Kept for audit; do not re-apply deltas out of order.",
       "retire_when": "Same as gacha-free-nobadge-collect; this delta folds into it."
     },
     {
@@ -414,7 +414,7 @@
           "replacement": "\"post_delay\": 2500,\n        \"timeout\": 30000,"
         }
       ],
-      "verify": "PENDING: cold solo re-run — expect OnCostume to match within the widened budget and the chain to traverse both tabs and hand back.",
+      "verify": "SUPERSEDED by gacha-free-nobadge-collect-v6 (verified 2026-10-10). Kept for audit; do not re-apply deltas out of order.",
       "retire_when": "Same as gacha-free-nobadge-collect; this delta folds into it."
     },
     {
@@ -462,7 +462,7 @@
           "replacement": "    \"GachaFree_QuickBtnRec\": {\n        \"recognition\": \"OCR\",\n        \"roi\": [\n            183,\n            596,\n            183,\n            76\n        ],\n        \"expected\": [\n            \"所有免费抽抽乐\"\n        ]\n    },\n    \"GachaADV_Start\": {"
         }
       ],
-      "verify": "PENDING: solo re-run — expect recognize_list for OnCostume to include NoQuickCostume and the chain to traverse both tabs instantly on absence.",
+      "verify": "SUPERSEDED by gacha-free-nobadge-collect-v6 (verified 2026-10-10). Kept for audit; do not re-apply deltas out of order.",
       "retire_when": "Same as gacha-free-nobadge-collect; this delta folds into it."
     },
     {
@@ -499,7 +499,7 @@
           "replacement": "        \"post_delay\": 2000,\n        \"timeout\": 20000,\n        \"on_error\": [\n            \"GachaFree_Finish\"\n        ],\n        \"next\": [\n            \"GachaFree_QuickGear\"\n        ],"
         }
       ],
-      "verify": "PENDING: solo re-run — expect OnCostume -(20s absence)-> ToGear -(20s absence)-> Finish -> original gate exit; total ~1.5 min, no Abort.",
+      "verify": "VERIFIED 2026-10-10 23:26 solo (absence path, both tabs' free buttons already used that day): Enter -> OnCostume matched ~1s -> 20s parent budget -> on_error ToGear (focus printed) -> 20s -> Finish focus '收集链完成' -> original badge gate miss -> clean completion, no Abort/hang. Live-collection path (button present) first exercised at the 2026-10-11 scheduled run + stage-4 count check. Root causes of the v1-v5 failures, all proven from maafw logs: (1) the Maa Agent caches the parsed pipeline at ITS start - resource edits need an MFAAvalonia restart to load (v3-v5 never loaded); (2) a next-candidate's recognition budget is the PARENT node's timeout and expiry routes to the PARENT's on_error; (3) inverse-recognition candidates are silently pruned from next lists in this runtime.",
       "retire_when": "Same as gacha-free-nobadge-collect; this delta folds into it."
     }
   ]
