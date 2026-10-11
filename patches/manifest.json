@@ -464,6 +464,43 @@
       ],
       "verify": "PENDING: solo re-run — expect recognize_list for OnCostume to include NoQuickCostume and the chain to traverse both tabs instantly on absence.",
       "retire_when": "Same as gacha-free-nobadge-collect; this delta folds into it."
+    },
+    {
+      "id": "gacha-free-nobadge-collect-v6",
+      "title": "白嫖收集链 v6:缺席路由改父节点 timeout 预算 + 父 on_error(实证语义)",
+      "kind": "shared-fix",
+      "status": "active",
+      "introduced": "2026-10-10",
+      "issue": "https://github.com/sunyink/MFABD2/issues/544",
+      "intent": "五轮实测总结出的 Maa 语义:next 候选的识别预算由父节点 timeout 决定(非候选自身),预算耗尽时走父节点 on_error(非候选自身);inverse 候选节点(直接 OCR 型与 And 包裹型两种形状)都会被运行时静默剔除出 next 列表(recognize_list 铁证、日志零出现)。v6 据此重构缺席路由:OnCostume(timeout 20000)以 QuickCostume 为唯一候选,缺席超时→父 on_error 直接转 ToGear;ToGear 同理(timeout 20000,缺席→Finish)。NoQuick*/QuickBtnRec 节点自此孤置不用。",
+      "files": [
+        "GACHA_ADV.json"
+      ],
+      "applied_markers": [
+        {
+          "file": "GACHA_ADV.json",
+          "node": "GachaFree_OnCostume",
+          "contains": "\"GachaFree_ToGear\""
+        }
+      ],
+      "edits": [
+        {
+          "file": "GACHA_ADV.json",
+          "type": "replace",
+          "count": 1,
+          "anchor": "    \"GachaFree_OnCostume\": {\n        \"recognition\": \"Or\",\n        \"any_of\": [\n            \"GachaADV_PageEnter_1#\",\n            \"GachaADV_GachaPage2\"\n        ],\n        \"timeout\": 90000,\n        \"on_error\": [\n            \"GachaFree_Abort\"\n        ],\n        \"next\": [\n            \"GachaFree_QuickCostume\",\n            \"GachaFree_NoQuickCostume\"\n        ]\n    },",
+          "replacement": "    \"GachaFree_OnCostume\": {\n        \"recognition\": \"Or\",\n        \"any_of\": [\n            \"GachaADV_PageEnter_1#\",\n            \"GachaADV_GachaPage2\"\n        ],\n        \"timeout\": 20000,\n        \"on_error\": [\n            \"GachaFree_ToGear\"\n        ],\n        \"next\": [\n            \"GachaFree_QuickCostume\"\n        ]\n    },"
+        },
+        {
+          "file": "GACHA_ADV.json",
+          "type": "replace",
+          "count": 1,
+          "anchor": "        \"post_delay\": 2000,\n        \"timeout\": 30000,\n        \"on_error\": [\n            \"GachaFree_Finish\"\n        ],\n        \"next\": [\n            \"GachaFree_QuickGear\",\n            \"GachaFree_NoQuickGear\"\n        ],",
+          "replacement": "        \"post_delay\": 2000,\n        \"timeout\": 20000,\n        \"on_error\": [\n            \"GachaFree_Finish\"\n        ],\n        \"next\": [\n            \"GachaFree_QuickGear\"\n        ],"
+        }
+      ],
+      "verify": "PENDING: solo re-run — expect OnCostume -(20s absence)-> ToGear -(20s absence)-> Finish -> original gate exit; total ~1.5 min, no Abort.",
+      "retire_when": "Same as gacha-free-nobadge-collect; this delta folds into it."
     }
   ]
 }
