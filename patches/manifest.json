@@ -403,15 +403,15 @@
           "file": "GACHA_ADV.json",
           "type": "replace",
           "count": 1,
-          "anchor": "    \"GachaFree_ToGear\": {\n        \"recognition\": \"Or\",\n        \"any_of\": [\n            \"GachaADV_PageEnter_1#\",\n            \"GachaADV_GachaPage2\"\n        ],\n        \"timeout\": 12000,",
-          "replacement": "    \"GachaFree_ToGear\": {\n        \"recognition\": \"Or\",\n        \"any_of\": [\n            \"GachaADV_PageEnter_1#\",\n            \"GachaADV_GachaPage2\"\n        ],\n        \"timeout\": 30000,"
+          "anchor": "\"post_delay\": 2000,\n        \"timeout\": 12000,",
+          "replacement": "\"post_delay\": 2000,\n        \"timeout\": 30000,"
         },
         {
           "file": "GACHA_ADV.json",
           "type": "replace",
           "count": 1,
-          "anchor": "    \"GachaFree_Finish\": {\n        \"recognition\": \"Or\",\n        \"any_of\": [\n            \"GachaADV_PageEnter_1#\",\n            \"GachaADV_GachaPage2\"\n        ],\n        \"timeout\": 12000,",
-          "replacement": "    \"GachaFree_Finish\": {\n        \"recognition\": \"Or\",\n        \"any_of\": [\n            \"GachaADV_PageEnter_1#\",\n            \"GachaADV_GachaPage2\"\n        ],\n        \"timeout\": 30000,"
+          "anchor": "\"post_delay\": 2500,\n        \"timeout\": 12000,",
+          "replacement": "\"post_delay\": 2500,\n        \"timeout\": 30000,"
         }
       ],
       "verify": "PENDING: cold solo re-run — expect OnCostume to match within the widened budget and the chain to traverse both tabs and hand back.",
