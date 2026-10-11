@@ -255,6 +255,61 @@
       ],
       "verify": "PENDING (2026-10-10 night): solo run of [执行]白嫖抽卡 with the day free pulls already collected manually — expect GachaFree focus lines (enter page -> costume quick absent -> gear tab -> gear quick absent -> finish) then the original gate exit, no loop, no paid clicks. Real-collection verification at the next daily run (stage-4 reads the free counts).",
       "retire_when": "Upstream removes the home-badge entry gate or natively collects the per-tab free pulls on entry regardless of the home icon badge."
+    },
+    {
+      "id": "gacha-free-nobadge-collect-v2",
+      "title": "白嫖收集链 v2:页内锚点改 Or(PageEnter_1#/GachaPage2)+进页失败重试一次",
+      "kind": "shared-fix",
+      "status": "active",
+      "introduced": "2026-10-10",
+      "issue": "https://github.com/sunyink/MFABD2/issues/544",
+      "intent": "补丁 #6 首跑实测:图标点击成功打开服装抽抽乐页(on_error 截图为证),但 GachaFree_OnCostume 单靠 GachaADV_PageEnter_1# 的 OCR 锚点 25 秒未命中而降级 Abort——该锚点在本期 Pickup 版面下不可靠。v2 把收集链三个页内锚点(OnCostume/ToGear/Finish)改为 Or[GachaADV_PageEnter_1#, GachaADV_GachaPage2](后者是上游为偏右版面准备的『兑换』OCR 锚点),并给进页加一次重试(Enter2/OnCostume2),第二次仍失败才 Abort 交回原流程。",
+      "files": [
+        "GACHA_ADV.json"
+      ],
+      "applied_markers": [
+        {
+          "file": "GACHA_ADV.json",
+          "contains": "\"GachaFree_Enter2\": {"
+        },
+        {
+          "file": "GACHA_ADV.json",
+          "node": "GachaFree_OnCostume",
+          "contains": "\"GachaFree_Enter2\""
+        }
+      ],
+      "edits": [
+        {
+          "file": "GACHA_ADV.json",
+          "type": "replace",
+          "count": 1,
+          "anchor": "    \"GachaFree_OnCostume\": {\n        \"recognition\": \"And\",\n        \"all_of\": [\n            \"GachaADV_PageEnter_1#\"\n        ],\n        \"timeout\": 25000,\n        \"on_error\": [\n            \"GachaFree_Abort\"\n        ],\n        \"next\": [\n            \"GachaFree_QuickCostume\"\n        ]\n    },",
+          "replacement": "    \"GachaFree_OnCostume\": {\n        \"recognition\": \"Or\",\n        \"any_of\": [\n            \"GachaADV_PageEnter_1#\",\n            \"GachaADV_GachaPage2\"\n        ],\n        \"timeout\": 25000,\n        \"on_error\": [\n            \"GachaFree_Enter2\"\n        ],\n        \"next\": [\n            \"GachaFree_QuickCostume\"\n        ]\n    },"
+        },
+        {
+          "file": "GACHA_ADV.json",
+          "type": "replace",
+          "count": 1,
+          "anchor": "    \"GachaADV_Start\": {",
+          "replacement": "    \"GachaFree_Enter2\": {\n        \"recognition\": \"And\",\n        \"all_of\": [\n            \"Rec_HomePage_GA_Ocr\",\n            \"Sub_HomePage_GA_Bright_Clr\"\n        ],\n        \"action\": \"Click\",\n        \"target\": [\n            129,\n            642\n        ],\n        \"post_delay\": 3500,\n        \"next\": [\n            \"GachaFree_OnCostume2\"\n        ],\n        \"focus\": \"GA.补丁:进页重试(第二次点击图标)\"\n    },\n    \"GachaFree_OnCostume2\": {\n        \"recognition\": \"Or\",\n        \"any_of\": [\n            \"GachaADV_PageEnter_1#\",\n            \"GachaADV_GachaPage2\"\n        ],\n        \"timeout\": 25000,\n        \"on_error\": [\n            \"GachaFree_Abort\"\n        ],\n        \"next\": [\n            \"GachaFree_QuickCostume\"\n        ]\n    },\n    \"GachaADV_Start\": {"
+        },
+        {
+          "file": "GACHA_ADV.json",
+          "type": "replace",
+          "count": 1,
+          "anchor": "    \"GachaFree_ToGear\": {\n        \"recognition\": \"And\",\n        \"all_of\": [\n            \"GachaADV_PageEnter_1#\"\n        ],",
+          "replacement": "    \"GachaFree_ToGear\": {\n        \"recognition\": \"Or\",\n        \"any_of\": [\n            \"GachaADV_PageEnter_1#\",\n            \"GachaADV_GachaPage2\"\n        ],"
+        },
+        {
+          "file": "GACHA_ADV.json",
+          "type": "replace",
+          "count": 1,
+          "anchor": "    \"GachaFree_Finish\": {\n        \"recognition\": \"And\",\n        \"all_of\": [\n            \"GachaADV_PageEnter_1#\"\n        ],",
+          "replacement": "    \"GachaFree_Finish\": {\n        \"recognition\": \"Or\",\n        \"any_of\": [\n            \"GachaADV_PageEnter_1#\",\n            \"GachaADV_GachaPage2\"\n        ],"
+        }
+      ],
+      "verify": "PENDING: re-run solo [执行]白嫖抽卡 after v2 — expect OnCostume to match via the Or anchor, traverse costume (no quick button today) -> gear tab -> finish -> original gate exit.",
+      "retire_when": "Same as gacha-free-nobadge-collect; this delta folds into it."
     }
   ]
 }
