@@ -6,12 +6,12 @@
   "patches": [
     {
       "id": "pass-enter-wait",
-      "title": "通行证进页等待：Pass_EnterPass 加 timeout 90000",
+      "title": "通行证进页等待：Pass_InToPass timeout 5000→30000 + Pass_EnterPass 加 timeout 90000",
       "kind": "shared-fix",
       "status": "active",
       "introduced": "2026-10-10",
       "issue": "https://github.com/sunyink/MFABD2/issues/544",
-      "intent": "Pass_EnterPass 原无显式 timeout，通行证页加载慢（实测 15 秒+）时等待耗尽走 on_error 链，任务 15 秒假绿、领取零执行。加 90 秒等待让页面真正加载；仍进不去则落入既有 Global_Null_Panic 链显性失败。",
+      "intent": "两处等待缺口（同属「页面/转场加载慢于等待窗 → 假绿」家族）：① Pass_EnterPass 原无显式 timeout，点入后页面加载慢（实测 15 秒+）时等待耗尽走 on_error 链，任务 15 秒假绿、领取零执行（2026-10-09）→ 加 90000。② Pass_InToPass 的主页锚点（抽抽乐区 And 识别）原 timeout 仅 5000：前序任务复位后游戏仍在转场加载屏时锚点永不命中，自循环约 18 秒后仍以 ret=true 收场、根本没点进去（2026-10-10 正式运行实证，on_error 截图为 BD2 加载屏）→ 改 30000，配合其自循环 next 容忍长转场。真进不去时 EnterPass 侧落入既有 Global_Null_Panic 链显性失败。",
       "files": [
         "Pass.json"
       ],
@@ -20,6 +20,11 @@
           "file": "Pass.json",
           "node": "Pass_EnterPass",
           "contains": "\"timeout\": 90000"
+        },
+        {
+          "file": "Pass.json",
+          "node": "Pass_InToPass",
+          "contains": "\"timeout\": 30000"
         }
       ],
       "edits": [
@@ -29,9 +34,16 @@
           "count": 1,
           "anchor": "        \"expected\": \"通行证\",\n        \"next\": [\n            \"Pass_SelectPass\",",
           "replacement": "        \"expected\": \"通行证\",\n        \"timeout\": 90000,\n        \"next\": [\n            \"Pass_SelectPass\","
+        },
+        {
+          "file": "Pass.json",
+          "type": "replace",
+          "count": 1,
+          "anchor": "        \"post_delay\": 1000,\n        \"timeout\": 5000,",
+          "replacement": "        \"post_delay\": 1000,\n        \"timeout\": 30000,"
         }
       ],
-      "verify": "单跑 [领取]通行证奖励：须真实进入通行证页（focus 出现 PM.通行证页面确认→选择通行证→点击领取链），耗时明显超过旧版 15 秒假绿；或在每日正式运行中观察同一签名。",
+      "verify": "单跑或正式运行 [领取]通行证奖励：须真实进入通行证页（focus 出现 PM.通行证页面确认→选择通行证→点击领取链）；2026-10-10 正式运行未走到（死在 InToPass 锚点，见 intent ②，补丁已据此扩围，待下轮运行验证）。",
       "retire_when": "上游 Pass_EnterPass 自带足够长的显式等待（>=60000）或等效的进页校验，且实机验证通过。"
     },
     {
