@@ -1207,9 +1207,37 @@
             "Daily_Intimacy_Exhausted",
             "[JumpBack]Daily_Intimacy_Up",
             "[JumpBack]Daily_Intimacy_Switch_Turn",
+            "Daily_Intimacy_AllCapped_CkSet",
             "Daily_Intimacy_Swip"
         ],
         "focus": "亲密度目录"
+    },
+    "Daily_Intimacy_AllCapped_CkSet": {
+        "desc": "[本地补丁] 谈心活锁出口（前段）：Set 闸已达上限（inverse 命中）才继续。见 patches/manifest.json#daily-intimacy-livelock-exit",
+        "recognition": "Custom",
+        "custom_recognition": "CheckTag",
+        "custom_recognition_param": {
+            "tag": "Intimacy_Switch_Set",
+            "max": 1
+        },
+        "inverse": true,
+        "next": [
+            "Daily_Intimacy_AllCapped_CkTurn"
+        ]
+    },
+    "Daily_Intimacy_AllCapped_CkTurn": {
+        "desc": "[本地补丁] 谈心活锁出口（后段）：Turn 闸也达上限（全员已轮过一遍且无人可谈、剩余次数又不到 0）→ 走 Daily_Intimacy_End 打标退出，禁止活锁",
+        "recognition": "Custom",
+        "custom_recognition": "CheckTag",
+        "custom_recognition_param": {
+            "tag": "Intimacy_Switch_Turn",
+            "max": 6
+        },
+        "inverse": true,
+        "next": [
+            "Daily_Intimacy_End"
+        ],
+        "focus": "[color:red][WRN] 谈心全员已达上限但仍有剩余次数，走补丁出口打标完成 [/color]"
     },
     "Daily_Intimacy_Switch_Set": {
         "recognition": "Custom",
