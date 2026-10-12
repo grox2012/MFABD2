@@ -595,7 +595,7 @@
           "replacement": "        \"action\": \"Click\",\n        \"max_hit\": 3,\n        \"target_offset\": [\n            0,\n            28,\n            0,\n            0\n        ],\n        \"post_delay\": 5000,\n        \"next\": [\n            \"[Anchor]SandBox_Bypass\",\n            \"Collect_Skill_Entry\",\n            \"Collect_ClickTelepor_TargetClass_White\",\n            \"[JumpBack]Global_WaitingForLoading\",\n            \"Collect_ClickTelepor_Abnormal_Overlap\""
         }
       ],
-      "verify": "PENDING：部署后单跑 [执行]地图采集[完整] 验收（正常完成 + 传送节点命中受限），结论回填本字段与 issue #547。",
+      "verify": "VERIFIED (partial) 2026-10-11 night: 部署后单跑 [执行]地图采集[完整] 22:35-22:36 正常收尾（任务已全部完成），传送点选命中 0、在装四节点 max_hit=3 marker 直读确认；正常路径无误伤。max_hit 熔断语义同晚已由 PerPetTask(PR #3) 实机证明。今晚采集点已采完、规划器走验完退出未进传送导航，循环态活体复现待 2026-10-12 17:01 正式运行回填。",
       "retire_when": "上游为传送点选链节点自带命中上限，或传送交互改为点后校验状态变化，且实机验证通过。"
     }
   ]
