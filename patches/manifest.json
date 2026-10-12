@@ -531,6 +531,72 @@
       ],
       "verify": "VERIFIED 2026-10-11 night: 部署后单跑 [执行]竞技场（18:04–18:22）——PerPetTask 命中 0 次（事故时 69 次），免费AP确认打印（JustUseFree 新赛季命中），自动战斗连打 35 场、计数 35/40→0/40 全额消耗，任务已全部完成正常收尾；手动 5 场（40→35）先行证明战斗本体。issue #546 已关闭，验证评论见 PR #3。",
       "retire_when": "上游为 PVP_PerPetTask 或同类 JumpBack 气泡点击节点自带命中上限/等效熔断，且实机验证通过。"
+    },
+    {
+      "id": "collect-teleport-loop-cap",
+      "title": "采集传送点选忙循环熔断：传送阵选择四节点加 max_hit 3",
+      "kind": "shared-fix",
+      "status": "active",
+      "introduced": "2026-10-11",
+      "issue": "https://github.com/sunyink/MFABD2/issues/547",
+      "intent": "2026-10-11 补跑：[执行]地图采集[完整] 在「战斗 I 凯洛山」移动魔法阵地图空转 10 分钟（CM.N.区域地图.tp1.选择首选传送阵图标 120 次、约 5 秒一轮）被外停。定因：Collect_ClickTelepor_TargetClass_White 的识别 Or 命中模板 TpCircleMap（地图上的常驻传送圈图标），其 next 含自引用且无 max_hit；当点中的圈已是选中/当前位置时点击不改变任何状态 → 模板持续命中、无限自循环。同链同型节点共四个（同一 next 骨架 [SandBox_Bypass, Collect_Skill_Entry, SELF, JumpBack Loading]、点击目标均为地图常驻图元）：White（首选）、PurpleProcess（次选 index:1）、Collect_ClickTeleporOccupy（TeleporZero，人物已在传送阵）、Collect_ClickTelepor_Abnormal_Overlap（重叠三角标）。修复：四节点各加 max_hit 3——正常传送 1 击即跳转离开本链；状态不变时到限候选失效，导航链转入旁路/技能入口或显性失败，由队列按单项失败语义续跑（故障隔离立项 #547 首批；全表自引用节点共 311 个属本仓常态写法，本补丁只动已实证/同链同型的传送四节点）。",
+      "files": [
+        "Collect_Navigation.json"
+      ],
+      "applied_markers": [
+        {
+          "file": "Collect_Navigation.json",
+          "node": "Collect_ClickTelepor_TargetClass_White",
+          "contains": "\"max_hit\": 3"
+        },
+        {
+          "file": "Collect_Navigation.json",
+          "node": "Collect_ClickTelepor_TargetClass_PurpleProcess",
+          "contains": "\"max_hit\": 3"
+        },
+        {
+          "file": "Collect_Navigation.json",
+          "node": "Collect_ClickTeleporOccupy",
+          "contains": "\"max_hit\": 3"
+        },
+        {
+          "file": "Collect_Navigation.json",
+          "node": "Collect_ClickTelepor_Abnormal_Overlap",
+          "contains": "\"max_hit\": 3"
+        }
+      ],
+      "edits": [
+        {
+          "file": "Collect_Navigation.json",
+          "type": "replace",
+          "count": 1,
+          "anchor": "        \"action\": \"Click\",\n        \"post_delay\": 5000,\n        \"next\": [\n            \"[Anchor]SandBox_Bypass\",\n            \"Collect_Skill_Entry\",\n            \"Collect_ClickTelepor_TargetClass_White\",",
+          "replacement": "        \"action\": \"Click\",\n        \"max_hit\": 3,\n        \"post_delay\": 5000,\n        \"next\": [\n            \"[Anchor]SandBox_Bypass\",\n            \"Collect_Skill_Entry\",\n            \"Collect_ClickTelepor_TargetClass_White\","
+        },
+        {
+          "file": "Collect_Navigation.json",
+          "type": "replace",
+          "count": 1,
+          "anchor": "        \"index\": 1,\n        \"action\": \"Click\",\n        \"post_delay\": 5000,\n        \"next\": [\n            \"[Anchor]SandBox_Bypass\",\n            \"Collect_Skill_Entry\",\n            \"Collect_ClickTelepor_TargetClass_PurpleProcess\",",
+          "replacement": "        \"index\": 1,\n        \"action\": \"Click\",\n        \"max_hit\": 3,\n        \"post_delay\": 5000,\n        \"next\": [\n            \"[Anchor]SandBox_Bypass\",\n            \"Collect_Skill_Entry\",\n            \"Collect_ClickTelepor_TargetClass_PurpleProcess\","
+        },
+        {
+          "file": "Collect_Navigation.json",
+          "type": "replace",
+          "count": 1,
+          "anchor": "        \"action\": \"Click\",\n        \"target\": [\n            120,\n            35\n        ],\n        \"post_delay\": 5000,\n        \"next\": [\n            \"[Anchor]SandBox_Bypass\",\n            \"Collect_Skill_Entry\",\n            \"Collect_ClickTeleporOccupy\",",
+          "replacement": "        \"action\": \"Click\",\n        \"max_hit\": 3,\n        \"target\": [\n            120,\n            35\n        ],\n        \"post_delay\": 5000,\n        \"next\": [\n            \"[Anchor]SandBox_Bypass\",\n            \"Collect_Skill_Entry\",\n            \"Collect_ClickTeleporOccupy\","
+        },
+        {
+          "file": "Collect_Navigation.json",
+          "type": "replace",
+          "count": 1,
+          "anchor": "        \"action\": \"Click\",\n        \"target_offset\": [\n            0,\n            28,\n            0,\n            0\n        ],\n        \"post_delay\": 5000,\n        \"next\": [\n            \"[Anchor]SandBox_Bypass\",\n            \"Collect_Skill_Entry\",\n            \"Collect_ClickTelepor_TargetClass_White\",\n            \"[JumpBack]Global_WaitingForLoading\",\n            \"Collect_ClickTelepor_Abnormal_Overlap\"",
+          "replacement": "        \"action\": \"Click\",\n        \"max_hit\": 3,\n        \"target_offset\": [\n            0,\n            28,\n            0,\n            0\n        ],\n        \"post_delay\": 5000,\n        \"next\": [\n            \"[Anchor]SandBox_Bypass\",\n            \"Collect_Skill_Entry\",\n            \"Collect_ClickTelepor_TargetClass_White\",\n            \"[JumpBack]Global_WaitingForLoading\",\n            \"Collect_ClickTelepor_Abnormal_Overlap\""
+        }
+      ],
+      "verify": "VERIFIED (partial) 2026-10-11 night: 部署后单跑 [执行]地图采集[完整] 22:35-22:36 正常收尾（任务已全部完成），传送点选命中 0、在装四节点 max_hit=3 marker 直读确认；正常路径无误伤。max_hit 熔断语义同晚已由 PerPetTask(PR #3) 实机证明。今晚采集点已采完、规划器走验完退出未进传送导航，循环态活体复现待 2026-10-12 17:01 正式运行回填。",
+      "retire_when": "上游为传送点选链节点自带命中上限，或传送交互改为点后校验状态变化，且实机验证通过。"
     }
   ]
 }
