@@ -529,7 +529,7 @@
           "replacement": "        \"action\": \"Click\",\n        \"max_hit\": 3,\n        \"post_delay\": 5000,\n        \"focus\": \"PM.宠物派遣\""
         }
       ],
-      "verify": "PENDING 2026-10-11 night: 单跑 [执行]竞技场验证（PerPetTask 命中 ≤3、进备战页、真实战斗并消耗计数、正常收尾；额度耗尽态经 APShortage 干净退出）。手动链已先行证明战斗本体与计数消耗正常（40→38 两胜）。",
+      "verify": "VERIFIED 2026-10-11 night: 部署后单跑 [执行]竞技场（18:04–18:22）——PerPetTask 命中 0 次（事故时 69 次），免费AP确认打印（JustUseFree 新赛季命中），自动战斗连打 35 场、计数 35/40→0/40 全额消耗，任务已全部完成正常收尾；手动 5 场（40→35）先行证明战斗本体。issue #546 已关闭，验证评论见 PR #3。",
       "retire_when": "上游为 PVP_PerPetTask 或同类 JumpBack 气泡点击节点自带命中上限/等效熔断，且实机验证通过。"
     }
   ]
