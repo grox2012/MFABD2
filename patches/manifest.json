@@ -501,6 +501,36 @@
       ],
       "verify": "VERIFIED 2026-10-10 23:26 solo (absence path, both tabs' free buttons already used that day): Enter -> OnCostume matched ~1s -> 20s parent budget -> on_error ToGear (focus printed) -> 20s -> Finish focus '收集链完成' -> original badge gate miss -> clean completion, no Abort/hang. Live-collection path (button present) first exercised at the 2026-10-11 scheduled run + stage-4 count check. Root causes of the v1-v5 failures, all proven from maafw logs: (1) the Maa Agent caches the parsed pipeline at ITS start - resource edits need an MFAAvalonia restart to load (v3-v5 never loaded); (2) a next-candidate's recognition budget is the PARENT node's timeout and expiry routes to the PARENT's on_error; (3) inverse-recognition candidates are silently pruned from next lists in this runtime.",
       "retire_when": "Same as gacha-free-nobadge-collect; this delta folds into it."
+    },
+    {
+      "id": "pvp-perpet-loop-cap",
+      "title": "竞技场 PerPetTask 忙循环熔断：PVP_PerPetTask 加 max_hit 3",
+      "kind": "shared-fix",
+      "status": "active",
+      "introduced": "2026-10-11",
+      "issue": "https://github.com/sunyink/MFABD2/issues/546",
+      "intent": "2026-10-11 正式运行：[执行]竞技场在第 159 赛季校场箱庭里空转约 6 分 25 秒、一场未打（PM.宠物派遣 69 次、约 5.5 秒一轮）。定因：校场箱庭有多个带白色「！」气泡的常驻 NPC（服装强化 NPC 等），PVP_PerPetTask（JumpBack 前置，宠物派遣气泡模板）分不清常驻气泡与派遣归来气泡，点完还在 → 无 max_hit 即无限命中，链上推进节点抢不到执行。手动实证入口/备战/战斗本体无故障（40→38 两场胜利）。修复：给 PVP_PerPetTask 加 max_hit 3——真派遣气泡 1–2 击即回收；常驻气泡到限后候选失效，链条转入推进节点或显性失败，不再静默空转。同文件 PVP_To_On 等已有 max_hit 先例。",
+      "files": [
+        "PVP.json"
+      ],
+      "applied_markers": [
+        {
+          "file": "PVP.json",
+          "node": "PVP_PerPetTask",
+          "contains": "\"max_hit\": 3"
+        }
+      ],
+      "edits": [
+        {
+          "file": "PVP.json",
+          "type": "replace",
+          "count": 1,
+          "anchor": "        \"action\": \"Click\",\n        \"post_delay\": 5000,\n        \"focus\": \"PM.宠物派遣\"",
+          "replacement": "        \"action\": \"Click\",\n        \"max_hit\": 3,\n        \"post_delay\": 5000,\n        \"focus\": \"PM.宠物派遣\""
+        }
+      ],
+      "verify": "PENDING 2026-10-11 night: 单跑 [执行]竞技场验证（PerPetTask 命中 ≤3、进备战页、真实战斗并消耗计数、正常收尾；额度耗尽态经 APShortage 干净退出）。手动链已先行证明战斗本体与计数消耗正常（40→38 两胜）。",
+      "retire_when": "上游为 PVP_PerPetTask 或同类 JumpBack 气泡点击节点自带命中上限/等效熔断，且实机验证通过。"
     }
   ]
 }
