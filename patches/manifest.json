@@ -181,7 +181,7 @@
       "status": "active",
       "introduced": "2026-10-10",
       "issue": "https://github.com/sunyink/MFABD2/issues/544",
-      "intent": "Daily_Intimacy_CatalogCard 的唯一正常出口是 Daily_Intimacy_Exhausted（剩余谈心次数 OCR 为 0）。当可谈对象全部亲密度达上限（LV MAX）时 Daily_Intimacy_Up（要求 Sub_Intimacy_Number + Sub_Intimacy_LV）永不命中，次数永远到不了 0（2026-10-10 实测剩余 1 次、对象 LV.6 MAX），Set（max 1）/Turn（max 6）双闸先后达上限后模块无任何完成出口，MarkComplete 永不打标，Daily 主 Hub 每轮重新进入谈心模块形成活锁：第一轮空转 18 分 02 秒、自修复补跑再空转 10 分 46 秒，均靠人工停（当晚 [检查拦截] 上限日志 99 条）。补丁在 CatalogCard 的 next 里、Swip 之前插入一条双闸 inverse 检查链（Set 已达上限 且 Turn 已达上限 → Daily_Intimacy_End 打标退出）。安全性：每次 CatalogCard 评估时 Up 都排在该出口之前，可谈对象会被先命中；Turn 达上限意味着全员已轮过一遍，出口只在「全员轮完且无人可谈、次数又未清零」时触发。",
+      "intent": "Daily_Intimacy_CatalogCard 的唯一正常出口是 Daily_Intimacy_Exhausted（剩余谈心次数 OCR 为 0）。当可谈对象全部亲密度达上限（LV MAX）时 Daily_Intimacy_Up（要求 Sub_Intimacy_Number + Sub_Intimacy_LV）永不命中，次数永远到不了 0（2026-10-10 实测剩余 1 次、对象 LV.6 MAX），Set（max 1）/Turn（max 6）双闸先后达上限后模块无任何完成出口，MarkComplete 永不打标，Daily 主 Hub 每轮重新进入谈心模块形成活锁：第一轮空转 18 分 02 秒、自修复补跑再空转 10 分 46 秒，均靠人工停（当晚 [检查拦截] 上限日志 99 条）。补丁在 CatalogCard 的 next 里、Swip 之前插入一条双闸 inverse 检查链（Set 已达上限 且 Turn 已达上限 → Daily_Intimacy_End 打标退出）。安全性：每次 CatalogCard 评估时 Up 都排在该出口之前，可谈对象会被先命中；Turn 达上限意味着全员已轮过一遍，出口只在「全员轮完且无人可谈、次数又未清零」时触发。 【2026-10-15 增补】出口加第三闸：2026-10-15 实证 Up 判据可因 roi 失明对全员恒假阴（见 intimacy-up-number-roi），双闸会把传感器故障误判成全员上限且 Swip 从未发生就宣判。增补 Daily_Intimacy_AllCapped_CkSwip（inverse CheckTag Intimacy_Swiped max 1）串在 CkTurn 之后；Daily_Intimacy_Swip 的 next 改走新节点 Daily_Intimacy_Swip_Mark（UpdateTag 置 Intimacy_Swiped=1，Swich_Reset 不清此 tag）再入 Reset。三闸齐备（Set 满 + Turn 满 + 至少一轮 Swip 发生且其后又完整遍历一遍）才许走补丁出口；CkSwip 不命中时链路自然落回 Swip 继续翻名单。遍历仍有界：每轮或谈成、或 Exhausted 正常出口、或 Swip 推进、或三闸出口，不复活锁。",
       "files": [
         "Daily.json"
       ],
@@ -194,6 +194,19 @@
           "file": "Daily.json",
           "node": "Daily_Intimacy_CatalogCard",
           "contains": "\"Daily_Intimacy_AllCapped_CkSet\""
+        },
+        {
+          "file": "Daily.json",
+          "contains": "\"Daily_Intimacy_AllCapped_CkSwip\": {"
+        },
+        {
+          "file": "Daily.json",
+          "contains": "\"Daily_Intimacy_Swip_Mark\": {"
+        },
+        {
+          "file": "Daily.json",
+          "node": "Daily_Intimacy_AllCapped_CkTurn",
+          "contains": "\"Daily_Intimacy_AllCapped_CkSwip\""
         }
       ],
       "edits": [
@@ -210,6 +223,34 @@
           "count": 1,
           "anchor": "\"[JumpBack]Daily_Intimacy_Switch_Turn\",\n            \"Daily_Intimacy_Swip\"",
           "replacement": "\"[JumpBack]Daily_Intimacy_Switch_Turn\",\n            \"Daily_Intimacy_AllCapped_CkSet\",\n            \"Daily_Intimacy_Swip\""
+        },
+        {
+          "file": "Daily.json",
+          "type": "replace",
+          "count": 1,
+          "anchor": "        \"next\": [\n            \"Daily_Intimacy_End\"\n        ],\n        \"focus\": \"[color:red][WRN] 谈心全员已达上限但仍有剩余次数，走补丁出口打标完成 [/color]\"",
+          "replacement": "        \"next\": [\n            \"Daily_Intimacy_AllCapped_CkSwip\"\n        ],\n        \"focus\": \"[color:red][WRN] 谈心全员已达上限但仍有剩余次数，走补丁出口打标完成 [/color]\""
+        },
+        {
+          "file": "Daily.json",
+          "type": "replace",
+          "count": 1,
+          "anchor": "    \"Daily_Intimacy_Switch_Set\": {",
+          "replacement": "    \"Daily_Intimacy_AllCapped_CkSwip\": {\n        \"desc\": \"[本地补丁] 谈心活锁出口（末段）：Swip 下滑轮次发生过（Intimacy_Swiped 已置位）才许宣判全员上限，防 Up 判据失明被误读成全员上限。见 patches/manifest.json#daily-intimacy-livelock-exit\",\n        \"recognition\": \"Custom\",\n        \"custom_recognition\": \"CheckTag\",\n        \"custom_recognition_param\": {\n            \"tag\": \"Intimacy_Swiped\",\n            \"max\": 1\n        },\n        \"inverse\": true,\n        \"next\": [\n            \"Daily_Intimacy_End\"\n        ]\n    },,\n    \"Daily_Intimacy_Switch_Set\": {"
+        },
+        {
+          "file": "Daily.json",
+          "type": "replace",
+          "count": 1,
+          "anchor": "        \"next\": [\"Daily_Intimacy_Swich_Reset\"],",
+          "replacement": "        \"next\": [\"Daily_Intimacy_Swip_Mark\"],"
+        },
+        {
+          "file": "Daily.json",
+          "type": "replace",
+          "count": 1,
+          "anchor": "    \"Daily_Intimacy_Swich_Reset\": {",
+          "replacement": "    \"Daily_Intimacy_Swip_Mark\": {\n        \"desc\": \"[本地补丁] Swip 发生标记：置 Intimacy_Swiped=1（Swich_Reset 不清此 tag），供活锁出口末段闸 CkSwip 判读。见 patches/manifest.json#daily-intimacy-livelock-exit\",\n        \"action\": \"Custom\",\n        \"custom_action\": \"UpdateTag\",\n        \"custom_action_param\": {\n            \"tag\": \"Intimacy_Swiped\",\n            \"value\": 1\n        },\n        \"next\": [\n            \"Daily_Intimacy_Swich_Reset\"\n        ]\n    },,\n    \"Daily_Intimacy_Swich_Reset\": {"
         }
       ],
       "verify": "VERIFIED 2026-10-10 evening solo run of [领取]日常任务: intimacy module cycled partners (Turn 3->6, Set 1/1 capped), then focus line 谈心全员已达上限但仍有剩余次数，走补丁出口打标完成 fired, Daily_Intimacy@g_daily completion mark written, task finished and queue advanced; whole Daily task took ~2m54s vs 18m03s livelock in the scheduled run. Remaining talk count was 1 at patch time (spent manually afterwards on 提尔, count now 0).",
@@ -597,6 +638,36 @@
       ],
       "verify": "VERIFIED (partial) 2026-10-11 night: 部署后单跑 [执行]地图采集[完整] 22:35-22:36 正常收尾（任务已全部完成），传送点选命中 0、在装四节点 max_hit=3 marker 直读确认；正常路径无误伤。max_hit 熔断语义同晚已由 PerPetTask(PR #3) 实机证明。今晚采集点已采完、规划器走验完退出未进传送导航，循环态活体复现待 2026-10-12 17:01 正式运行回填。",
       "retire_when": "上游为传送点选链节点自带命中上限，或传送交互改为点后校验状态变化，且实机验证通过。"
+    },
+    {
+      "id": "intimacy-up-number-roi",
+      "title": "谈心 Up 判据修复：Sub_Intimacy_Number roi 放宽纳入完整 N/N 计数",
+      "kind": "shared-fix",
+      "status": "active",
+      "introduced": "2026-10-15",
+      "issue": "https://github.com/grox2012/MFABD2/issues/6",
+      "intent": "2026-10-15 正式运行谈心段日志取证：Daily_Intimacy_Up 被评估 21 次，每次都倒在 And 首个子判据 Sub_Intimacy_Number——其实读文本「2」(score 0.858) 但 filtered 为空：expected 正则要求同数对 (N/N)，而 roi [986,637,31,24] 只框住一位数字、斜杠与第二位在框外，永不匹配；And 短路使 Sub_Intimacy_LV 全程未被 OCR。全员 Up 恒假阴 → Turn 轮完 6 人 → 活锁出口误判「全员已达上限」打标（阶段四直读实剩 3 次）。本补丁把 roi 放宽为 [975,633,64,32] 纳入完整计数文本。注意：数值为候选，部署前须以目录页全分辨率实帧量测计数文本实际位置/字幅后定稿，实测不符先改本条再部署。",
+      "files": [
+        "Daily.json"
+      ],
+      "applied_markers": [
+        {
+          "file": "Daily.json",
+          "node": "Sub_Intimacy_Number",
+          "contains": "975"
+        }
+      ],
+      "edits": [
+        {
+          "file": "Daily.json",
+          "type": "replace",
+          "count": 1,
+          "anchor": "        \"roi\": [\n            986,\n            637,\n            31,\n            24\n        ],",
+          "replacement": "        \"roi\": [\n            975,\n            633,\n            64,\n            32\n        ],"
+        }
+      ],
+      "verify": "solo 单跑谈心段（留有剩余次数）：日志 Sub_Intimacy_Number filtered 非空、Daily_Intimacy_Up focus「可以谈心-开始」命中并真实谈心（Up_MSG→Talk_Enter→Talk_Out）；阶段四直读剩余归 0。若实帧量测显示计数文本不在候选 roi 内，本条数值先修正再部署，不许将就。",
+      "retire_when": "上游修正 Sub_Intimacy_Number 的 roi/正则使 N/N 可被完整识别时。"
     }
   ]
 }
