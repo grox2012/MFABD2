@@ -181,7 +181,7 @@
       "status": "active",
       "introduced": "2026-10-10",
       "issue": "https://github.com/sunyink/MFABD2/issues/544",
-      "intent": "Daily_Intimacy_CatalogCard 的唯一正常出口是 Daily_Intimacy_Exhausted（剩余谈心次数 OCR 为 0）。当可谈对象全部亲密度达上限（LV MAX）时 Daily_Intimacy_Up（要求 Sub_Intimacy_Number + Sub_Intimacy_LV）永不命中，次数永远到不了 0（2026-10-10 实测剩余 1 次、对象 LV.6 MAX），Set（max 1）/Turn（max 6）双闸先后达上限后模块无任何完成出口，MarkComplete 永不打标，Daily 主 Hub 每轮重新进入谈心模块形成活锁：第一轮空转 18 分 02 秒、自修复补跑再空转 10 分 46 秒，均靠人工停（当晚 [检查拦截] 上限日志 99 条）。补丁在 CatalogCard 的 next 里、Swip 之前插入一条双闸 inverse 检查链（Set 已达上限 且 Turn 已达上限 → Daily_Intimacy_End 打标退出）。安全性：每次 CatalogCard 评估时 Up 都排在该出口之前，可谈对象会被先命中；Turn 达上限意味着全员已轮过一遍，出口只在「全员轮完且无人可谈、次数又未清零」时触发。 【2026-10-15 增补】出口加第三闸：2026-10-15 实证 Up 判据可因 roi 失明对全员恒假阴（见 intimacy-up-number-roi），双闸会把传感器故障误判成全员上限且 Swip 从未发生就宣判。增补 Daily_Intimacy_AllCapped_CkSwip（inverse CheckTag Intimacy_Swiped max 1）串在 CkTurn 之后；Daily_Intimacy_Swip 的 next 改走新节点 Daily_Intimacy_Swip_Mark（UpdateTag 置 Intimacy_Swiped=1，Swich_Reset 不清此 tag）再入 Reset。三闸齐备（Set 满 + Turn 满 + 至少一轮 Swip 发生且其后又完整遍历一遍）才许走补丁出口；CkSwip 不命中时链路自然落回 Swip 继续翻名单。遍历仍有界：每轮或谈成、或 Exhausted 正常出口、或 Swip 推进、或三闸出口，不复活锁。",
+      "intent": "Daily_Intimacy_CatalogCard 的唯一正常出口是 Daily_Intimacy_Exhausted（剩余谈心次数 OCR 为 0）。当可谈对象全部亲密度达上限（LV MAX）时 Daily_Intimacy_Up（要求 Sub_Intimacy_Number + Sub_Intimacy_LV）永不命中，次数永远到不了 0（2026-10-10 实测剩余 1 次、对象 LV.6 MAX），Set（max 1）/Turn（max 6）双闸先后达上限后模块无任何完成出口，MarkComplete 永不打标，Daily 主 Hub 每轮重新进入谈心模块形成活锁：第一轮空转 18 分 02 秒、自修复补跑再空转 10 分 46 秒，均靠人工停（当晚 [检查拦截] 上限日志 99 条）。补丁在 CatalogCard 的 next 里、Swip 之前插入一条双闸 inverse 检查链（Set 已达上限 且 Turn 已达上限 → Daily_Intimacy_End 打标退出）。安全性：每次 CatalogCard 评估时 Up 都排在该出口之前，可谈对象会被先命中；Turn 达上限意味着全员已轮过一遍，出口只在「全员轮完且无人可谈、次数又未清零」时触发。 【2026-10-15 增补】出口加第三闸：2026-10-15 实证 Up 判据可因 roi 失明对全员恒假阴（见 intimacy-up-number-roi），双闸会把传感器故障误判成全员上限且 Swip 从未发生就宣判。增补 Daily_Intimacy_AllCapped_CkSwip（inverse CheckTag Intimacy_Swiped max 1）串在 CkTurn 之后；Daily_Intimacy_Swip 的 next 改走新节点 Daily_Intimacy_Swip_Mark（UpdateTag 置 Intimacy_Swiped=1，Swich_Reset 不清此 tag）再入 Reset。三闸齐备（Set 满 + Turn 满 + 至少一轮 Swip 发生且其后又完整遍历一遍）才许走补丁出口；CkSwip 不命中时链路自然落回 Swip 继续翻名单。遍历仍有界：每轮或谈成、或 Exhausted 正常出口、或 Swip 推进、或三闸出口，不复活锁。 注：Swip 的 next 锚点按发布包多行格式书写；上游源码该处现为单行格式，向源码树重打时按 PATCH_MAINTENANCE §3.1 格式漂移处理（分支源码已同步为多行）。",
       "files": [
         "Daily.json"
       ],
@@ -242,8 +242,8 @@
           "file": "Daily.json",
           "type": "replace",
           "count": 1,
-          "anchor": "        \"next\": [\"Daily_Intimacy_Swich_Reset\"],",
-          "replacement": "        \"next\": [\"Daily_Intimacy_Swip_Mark\"],"
+          "anchor": "        \"next\": [\n            \"Daily_Intimacy_Swich_Reset\"\n        ],",
+          "replacement": "        \"next\": [\n            \"Daily_Intimacy_Swip_Mark\"\n        ],"
         },
         {
           "file": "Daily.json",
