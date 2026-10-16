@@ -597,6 +597,59 @@
       ],
       "verify": "VERIFIED (partial) 2026-10-11 night: 部署后单跑 [执行]地图采集[完整] 22:35-22:36 正常收尾（任务已全部完成），传送点选命中 0、在装四节点 max_hit=3 marker 直读确认；正常路径无误伤。max_hit 熔断语义同晚已由 PerPetTask(PR #3) 实机证明。今晚采集点已采完、规划器走验完退出未进传送导航，循环态活体复现待 2026-10-12 17:01 正式运行回填。",
       "retire_when": "上游为传送点选链节点自带命中上限，或传送交互改为点后校验状态变化，且实机验证通过。"
+    },
+    {
+      "id": "activities-direct-entry",
+      "title": "活动页无红点直达：主页无条件点活动图标进页领笔/拼图，红点门降为第二层",
+      "kind": "shared-fix",
+      "status": "active",
+      "introduced": "2026-10-15",
+      "issue": "https://github.com/grox2012/MFABD2/issues/5",
+      "intent": "「[领取]活动页奖励」入口被 Activities_InIndex 的红点检测单点把守：红点 miss 即 HomePageHub 落 Global_ToSandBox、整项 21 秒静默假绿，活动页从未进入（2026-10-15 实证，19:28:47→19:29:08；与 2026-10-09 故障 #18 同签名）。页内可领项（活动任务触控笔、拼图全部解锁等）不必然在主页图标冒红点。照 gacha-free-nobadge-collect 先例加直达路径：HomePageHub.next 首位插 Activities_DirectEnter（主页锚 And 命中即无条件 Click 活动图标 target [692,625]=设备(1038,938)，post_delay 5000 后接 Activities_Index OCR 确认页）；Activities_Index 加 timeout 25000 + on_error 回 Activities_InIndex，直达未落页时回退原红点门（其 max_hit 3 保证不死循环）。原 InIndex 红点路径与门后 FindActive/GetAll/GetPinTu 链一字不动。未验点：进门后 FindActive/Slip 落「活动任务」页签（左列最底、设备 (316,819)）的能力待 solo 首跑验证，落空再追加显式路线 delta。",
+      "files": [
+        "Activities.json"
+      ],
+      "applied_markers": [
+        {
+          "file": "Activities.json",
+          "contains": "\"Activities_DirectEnter\": {"
+        },
+        {
+          "file": "Activities.json",
+          "node": "Activities_HomePageHub",
+          "contains": "\"Activities_DirectEnter\""
+        },
+        {
+          "file": "Activities.json",
+          "node": "Activities_Index",
+          "contains": "\"timeout\": 25000"
+        }
+      ],
+      "edits": [
+        {
+          "file": "Activities.json",
+          "type": "replace",
+          "count": 1,
+          "anchor": "    \"Activities_HomePageHub\": {",
+          "replacement": "    \"Activities_DirectEnter\": {\n        \"desc\": \"[本地补丁] 活动页无红点直达：主页无条件点活动图标进页，红点门降为第二层。见 patches/manifest.json#activities-direct-entry\",\n        \"recognition\": \"And\",\n        \"all_of\": [\n            \"Rec_HomePage_GA_Ocr\",\n            \"Sub_HomePage_GA_Bright_Clr\"\n        ],\n        \"action\": \"Click\",\n        \"target\": [\n            692,\n            625\n        ],\n        \"post_delay\": 5000,\n        \"next\": [\n            \"Activities_Index\"\n        ],\n        \"focus\": \"AA.补丁:无视主页红点直接进活动页\"\n    },\n    \"Activities_HomePageHub\": {"
+        },
+        {
+          "file": "Activities.json",
+          "type": "replace",
+          "count": 1,
+          "anchor": "        \"next\": [\n            \"Activities_InIndex\",\n            \"Global_ToSandBox\"\n        ]",
+          "replacement": "        \"next\": [\n            \"Activities_DirectEnter\",\n            \"Activities_InIndex\",\n            \"Global_ToSandBox\"\n        ]"
+        },
+        {
+          "file": "Activities.json",
+          "type": "replace",
+          "count": 1,
+          "anchor": "        \"expected\": [\n            \"活动\"\n        ],\n        \"next\": [\n            \"Activities_FindActive\",",
+          "replacement": "        \"expected\": [\n            \"活动\"\n        ],\n        \"timeout\": 25000,\n        \"on_error\": [\n            \"Activities_InIndex\"\n        ],\n        \"next\": [\n            \"Activities_FindActive\","
+        }
+      ],
+      "verify": "solo 单跑 [领取]活动页奖励：日志 focus 链见 Activities_DirectEnter → Activities_Index → FindActive/GetAll/GetPinTu 实际执行（非 21 秒空转）；阶段四式直读：活动任务页签触控笔领后计数变化、拼图页全部解锁后笔数归零。",
+      "retire_when": "上游给活动页入口加了无红点直达路径，或入口不再由红点单点把守时。"
     }
   ]
 }

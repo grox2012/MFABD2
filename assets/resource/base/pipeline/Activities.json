@@ -6,6 +6,24 @@
             "[JumpBack]Global_ToHomePage"
         ]
     },
+    "Activities_DirectEnter": {
+        "desc": "[本地补丁] 活动页无红点直达：主页无条件点活动图标进页，红点门降为第二层。见 patches/manifest.json#activities-direct-entry",
+        "recognition": "And",
+        "all_of": [
+            "Rec_HomePage_GA_Ocr",
+            "Sub_HomePage_GA_Bright_Clr"
+        ],
+        "action": "Click",
+        "target": [
+            692,
+            625
+        ],
+        "post_delay": 5000,
+        "next": [
+            "Activities_Index"
+        ],
+        "focus": "AA.补丁:无视主页红点直接进活动页"
+    },
     "Activities_HomePageHub": {
         "desc": "[通用复位]复位到主界面模块,开始,中继调用",
         "recognition": "And",
@@ -15,6 +33,7 @@
         ],
         "rate_limit": 2000,
         "next": [
+            "Activities_DirectEnter",
             "Activities_InIndex",
             "Global_ToSandBox"
         ]
@@ -81,6 +100,10 @@
         ],
         "expected": [
             "活动"
+        ],
+        "timeout": 25000,
+        "on_error": [
+            "Activities_InIndex"
         ],
         "next": [
             "Activities_FindActive",
