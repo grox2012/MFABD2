@@ -597,6 +597,60 @@
       ],
       "verify": "VERIFIED (partial) 2026-10-11 night: 部署后单跑 [执行]地图采集[完整] 22:35-22:36 正常收尾（任务已全部完成），传送点选命中 0、在装四节点 max_hit=3 marker 直读确认；正常路径无误伤。max_hit 熔断语义同晚已由 PerPetTask(PR #3) 实机证明。今晚采集点已采完、规划器走验完退出未进传送导航，循环态活体复现待 2026-10-12 17:01 正式运行回填。",
       "retire_when": "上游为传送点选链节点自带命中上限，或传送交互改为点后校验状态变化，且实机验证通过。"
+    },
+    {
+      "id": "season-mamono-excise",
+      "title": "赛季魔兽子段摘除：Event_Mamono_Hub + SeasonEvent_ReMamono_Hub enabled:false，lvdown 加 max_hit 3 保险丝",
+      "kind": "local-custom",
+      "status": "active",
+      "introduced": "2026-10-16",
+      "issue": "https://github.com/grox2012/MFABD2/issues/9",
+      "intent": "赛季活动快速战斗的魔兽子段等级链按带数字等级 UI 的页面设计，狩猎期正式魔兽页（CHALLENGE 页签页）无此 UI：MamonoEnter 四个真出口全灭（Practice 读到「距离结束还剩4天」、lv1_Ck 的 roi 只有 boss 名后缀「(水)」、快速战斗 roi 落在队伍头像行、InMamono 无底部页签），只剩无 max_hit/timeout 的 JumpBack 兜底 Even_MamonoFollowUp_lvdown 反复点空白背景 (851,113)，EM.EM.等级下调 以 6.15s 周期活锁并饿死整个任务队列（2026-10-15、10-16 连续两晚实证，干净重启复卡）。根因为页面状态不符、调参无解。按用户 2026-10-16 裁定摘除：两 Hub（主链+回归链共用同一活锁源）一并 enabled:false，赛季段不再进魔兽页；魔兽战由日常阶段四正式段（战术配置法）承接。lvdown 加 max_hit 3 为保险丝，防 option override 重新放行时再成无上限活锁。依赖分析：赛季任务完成判定（图穷尽→Global_ToHomePage）、通行证与活动计数与魔兽子段零依赖，唯一让渡为脚本侧魔兽参与奖领取（⑮ 已承接）。",
+      "files": [
+        "EventBattle.json"
+      ],
+      "applied_markers": [
+        {
+          "file": "EventBattle.json",
+          "node": "Event_Mamono_Hub",
+          "contains": "\"enabled\": false"
+        },
+        {
+          "file": "EventBattle.json",
+          "node": "SeasonEvent_ReMamono_Hub",
+          "contains": "\"enabled\": false"
+        },
+        {
+          "file": "EventBattle.json",
+          "node": "Even_MamonoFollowUp_lvdown",
+          "contains": "\"max_hit\": 3"
+        }
+      ],
+      "edits": [
+        {
+          "file": "EventBattle.json",
+          "type": "replace",
+          "count": 1,
+          "anchor": "        \"desc\": \"赛季魔兽讨伐jb1入口。enabled是interface的抓手;有意不加存档闸——收尾链(Even_MamonoFollowUp_onSubMain)与SeasonEvent_ReMamono_Hub完全共用,打标区分不开是谁做完的\",\n        \"enabled\": true,",
+          "replacement": "        \"desc\": \"赛季魔兽讨伐jb1入口。enabled是interface的抓手;有意不加存档闸——收尾链(Even_MamonoFollowUp_onSubMain)与SeasonEvent_ReMamono_Hub完全共用,打标区分不开是谁做完的\",\n        \"enabled\": false,"
+        },
+        {
+          "file": "EventBattle.json",
+          "type": "replace",
+          "count": 1,
+          "anchor": "        \"desc\": \"检测回归魔兽,在mini后运行,前者天然地回到了主页面。enabled是interface的抓手;有意不加存档闸——收尾链与Event_Mamono_Hub共用\",\n        \"enabled\": true,",
+          "replacement": "        \"desc\": \"检测回归魔兽,在mini后运行,前者天然地回到了主页面。enabled是interface的抓手;有意不加存档闸——收尾链与Event_Mamono_Hub共用\",\n        \"enabled\": false,"
+        },
+        {
+          "file": "EventBattle.json",
+          "type": "replace",
+          "count": 1,
+          "anchor": "            \"Even_MamonoFollowUp_MamonoEnter\"\n        ],\n        \"action\": \"Click\",",
+          "replacement": "            \"Even_MamonoFollowUp_MamonoEnter\"\n        ],\n        \"action\": \"Click\",\n        \"max_hit\": 3,"
+        }
+      ],
+      "verify": "UNVERIFIED（2026-10-16 诊断完成、过督导第一关；部署窗口另定，部署后按 issue #9 的 solo 方案验证：默认全扇出单跑赛季任务自完成、魔兽界面确认打开与 EM.EM.等级下调 grep 双 0、其余子段轨迹同序、回主页、≤10 分钟）。",
+      "retire_when": "上游摘除或重构魔兽子段等级链，或赛季魔兽页恢复数字等级 UI 且子段实机验证通过。"
     }
   ]
 }
