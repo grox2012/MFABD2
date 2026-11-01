@@ -16,7 +16,7 @@
   "action": "Click",
   "desc": "主界面点「GOLDEN COLOSSEUM 返回战场」横幅直达竞技场（设备 (1390,974)->参考 (927,649)，2026-10-09 实机定案的第二入口）。首入无横幅时走珍藏集卡带路径（卡带设备 (1612,650)->(1075,433)，货架需先上滑、滚动后 (1612,420)->(1075,280)），该路径需模板图，v1 未含，见 NOTES TODO。",
   "expected": [
-   "GOLDEN COLOSSEUM"
+   "GOLDEN"
   ],
   "focus": "GC.主界面横幅进竞技场",
   "next": [
@@ -218,7 +218,7 @@
   "timeout": 30000
  },
  "GC_TaskStart": {
-  "desc": "黄金竞技场连战任务入口（分发节点）。仿 PVP_TaskStart：先试已在竞技场主页，次走全局复位到主界面，再走入口点击。实证出处：2026-10-08/09 手动与 MAX 连战全程。",
+  "desc": "黄金竞技场连战任务入口（分发节点）。仿 PVP_TaskStart：先试已在竞技场主页，次走全局复位到主界面，再走入口点击。实证出处：2026-10-08/09 手动与 MAX 连战全程。2026-11-01 补丁：timeout 5000→60000（入口链含 Global_ToHomePage 8000ms + GC_Enter_FromHome 30000ms + post_delay 3000，5000ms 预算必耗尽）；预算耗尽走 on_error 显性失败，不再落 Global_Null 假成功。见 grox2012/MFABD2#11。",
   "next": [
    "GC_AtArena",
    "GC_LeaveSettle_V",
@@ -227,7 +227,16 @@
    "[JumpBack]Global_ToHomePage",
    "GC_Enter_FromHome"
   ],
-  "timeout": 5000
+  "on_error": [
+   "GC_Entry_Failed"
+  ],
+  "timeout": 60000
+ },
+ "GC_Entry_Failed": {
+  "action": "StopTask",
+  "desc": "[本地补丁] 黄金竞技场入口路由失败显性失败：GC_TaskStart 预算耗尽（入口链未走通）时命中，禁止 Global_Null 假成功（2026-10-30 三次点火 0 场却 ret=true）。仿 QuickHunt_LockedStage_Panic 显性失败范式。见 grox2012/MFABD2#11。",
+  "focus": "[color:red][WRN] 黄金竞技场入口失败（GC_TaskStart 预算耗尽），任务显性失败 [/color]",
+  "recognition": "DirectHit"
  },
  "GC_LeaveSettle_V": {
   "recognition": "OCR",
