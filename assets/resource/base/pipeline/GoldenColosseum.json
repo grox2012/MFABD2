@@ -54,6 +54,12 @@
   ],
   "template": [
    "GC_Card_GoldenColosseum.png"
+  ],
+  "target_offset": [
+   0,
+   -90,
+   0,
+   0
   ]
  },
  "GC_CardPath_HallCart": {
