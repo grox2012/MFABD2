@@ -341,6 +341,20 @@
                 "半自动作业"
             ],
             "description": "半自动辅助，按需使用。<br><span style=\"background-color:rgba(255,160,0,0.2)\"><b>常闭，单独开启使用：</b>每个子项需从指定页面启动，请先手动进入对应界面再运行。</span>"
+        },
+        {
+            "name": "[执行]黄金竞技场连战",
+            "entry": "GC_TaskStart",
+            "controller": [
+                "Adb",
+                "PlayCover"
+            ],
+            "default_check": false,
+            "option": [
+                "黄金竞技场-连战模式",
+                "黄金竞技场-胜率停机阈值"
+            ],
+            "description": "黄金竞技场（黄金角斗场）自动连战：进场后打第一场，在结算屏打开自动战斗对话框设 MAX，用游戏自带反复战斗打完剩余入场次数，结束读「反复战斗结果」对账。<br><b>注意：</b>会消耗本周入场次数（每周补充 100 次，用完不恢复）；阵容与庇佑必须事先按攻略配好并校验，本任务不做任何配阵/换阵。晋级屏偶发楔死时本任务会停住，须人工重启游戏恢复（进度在服务器，不丢）。"
         }
     ],
     "option": {
@@ -7823,6 +7837,87 @@
                             "attach": {
                                 "account_id": "0"
                             }
+                        }
+                    }
+                }
+            ]
+        },
+        "黄金竞技场-连战模式": {
+            "type": "select",
+            "description": "连战场次模式。MAX = 在自动战斗对话框点 MAX，打完当前剩余全部入场次数（默认）。固定场次在 v1 仅改校验期望值，设数动作节点待实机标定后补入，在此之前选固定场次会在次数校验处超时安全停机，不会误烧次数。",
+            "cases": [
+                {
+                    "name": "打满剩余次数(MAX)"
+                },
+                {
+                    "name": "固定10次",
+                    "pipeline_override": {
+                        "GC_SetCount_MAX": {
+                            "enabled": false
+                        },
+                        "GC_SetCount_Verify": {
+                            "expected": [
+                                "^自动战斗10次$"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "固定20次",
+                    "pipeline_override": {
+                        "GC_SetCount_MAX": {
+                            "enabled": false
+                        },
+                        "GC_SetCount_Verify": {
+                            "expected": [
+                                "^自动战斗20次$"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "固定30次",
+                    "pipeline_override": {
+                        "GC_SetCount_MAX": {
+                            "enabled": false
+                        },
+                        "GC_SetCount_Verify": {
+                            "expected": [
+                                "^自动战斗30次$"
+                            ]
+                        }
+                    }
+                }
+            ]
+        },
+        "黄金竞技场-胜率停机阈值": {
+            "type": "select",
+            "description": "连战中阶段胜率低于阈值时停机汇报（用户裁决 Q2）。v1 状态：HUD/结果文本只做 OCR 读数，胜率结构化解析与阈值判定 TODO 走 agent 自定义识别；当前 override 仅改监控节点 focus 日志标记作占位，不产生停机行为。",
+            "cases": [
+                {
+                    "name": "不停（打满）"
+                },
+                {
+                    "name": "55%",
+                    "pipeline_override": {
+                        "GC_HUD_Monitor": {
+                            "focus": "GC.连战进行中...(胜率停机阈值55%)"
+                        }
+                    }
+                },
+                {
+                    "name": "60%",
+                    "pipeline_override": {
+                        "GC_HUD_Monitor": {
+                            "focus": "GC.连战进行中...(胜率停机阈值60%)"
+                        }
+                    }
+                },
+                {
+                    "name": "65%",
+                    "pipeline_override": {
+                        "GC_HUD_Monitor": {
+                            "focus": "GC.连战进行中...(胜率停机阈值65%)"
                         }
                     }
                 }

@@ -1,0 +1,571 @@
+{
+ "$comment": "黄金竞技场连战 pipeline v1（本地暂存，未部署）。坐标一律 1280x720 参考坐标（设备 1920x1080 x2/3）。GC_MatchFound.roi、GC_FirstSettle.roi、GC_OpenAutoDialog.roi、GC_HUD_Monitor.roi、GC_Promotion_Detect.roi、GC_Result_Read.roi、GC_Final_Verify.roi（入场计数，仿 PVP AP 读数位 [1040,36,62,21] 右移估算）。GC_Enter_FromHome、GC_ClickBattle、GC_SetCount_MAX、GC_LoopStart、GC_Result_Close 来自 2026-10-08/09 实机设备坐标 x2/3。胜率停机判定 v1 只做 OCR 读数，阈值判定 TODO 走 agent 自定义识别（见各节点 desc 与 NOTES.md）。",
+ "GC_AtArena": {
+  "all_of": [
+   "Rec_Pack_GoldenColosseum"
+  ],
+  "desc": "识别已在黄金竞技场主页：复用 Global.json 的 Rec_Pack_GoldenColosseum（OCR 阵形 roi [94,601,95,55]），不重定义。草案要求同时读右上角入场计数 N/100，v1 合并到 GC_Final_Verify 的读数节点（同一 roi 口径），起始读数 TODO 见 NOTES。",
+  "focus": "GC.已在竞技场主页",
+  "next": [
+   "GC_OpenDialog"
+  ],
+  "recognition": "And",
+  "timeout": 30000
+ },
+ "GC_CardPath_AtCollection": {
+  "desc": "卡带路径第 2 步：确认已到游戏卡珍藏集（顶栏标题 OCR）。2026-11-03 手动实证：大厅右下卡带图点按后到此页。2026-11-03 第 3 轮教训：重开货架保留滚动位，须先下滑回顶再上滑；FindGC 阈值 0.94 防误板。",
+  "expected": [
+   "游戏卡珍藏集"
+  ],
+  "focus": "GC.卡带路径已到珍藏集",
+  "next": [
+   "GC_CardPath_SwipeTop1",
+   "GC_CardPath_AtCollection"
+  ],
+  "on_error": [
+   "GC_Entry_Failed"
+  ],
+  "post_delay": 1000,
+  "recognition": "OCR",
+  "roi": [
+   130,
+   20,
+   230,
+   40
+  ]
+ },
+ "GC_CardPath_FindGC": {
+  "action": "Click",
+  "desc": "卡带路径第 4 步：模板匹配战斗玩法行黄金竞技场名签板（PvP 小签＋“黄金竞技场”全文，85×44，取自 1280×720 缩放帧，与赛季无关），点匹配中心进卡带载入。2026-11-03 手动实证：上滑后名签在位。2026-11-03 第 3 轮教训：阈值 0.94（误板最高 0.922663，真板同资产应近 0.99）；下滑回顶后上滑复现 01:40 态，真板在 roi 内。2026-11-03 第 4 轮教训：roi 纵向放宽至 y 200-700（真板曾落在 y~603），以阈值 0.94（非 roi）区分误板。",
+  "focus": "GC.卡带路径命中黄金竞技场卡",
+  "next": [
+   "GC_AtArena"
+  ],
+  "on_error": [
+   "GC_Entry_Failed"
+  ],
+  "post_delay": 8000,
+  "recognition": "TemplateMatch",
+  "roi": [
+   40,
+   200,
+   1200,
+   500
+  ],
+  "template": [
+   "GC_Card_GoldenColosseum.png"
+  ],
+  "target_offset": [
+   0,
+   -90,
+   0,
+   0
+  ],
+  "threshold": 0.94
+ },
+ "GC_CardPath_HallCart": {
+  "action": "Click",
+  "desc": "卡带路径第 1 步：大厅右下卡带 widget 位置点按（参考 (1130,650)＝设备 (1695,975)，2026-11-03 手动实证）。widget 内容可变（最近游玩卡），故 DirectHit 位置点按，到达由下一节点标题 OCR 验。",
+  "focus": "GC.卡带路径点大厅卡带",
+  "next": [
+   "GC_CardPath_AtCollection"
+  ],
+  "on_error": [
+   "GC_Entry_Failed"
+  ],
+  "post_delay": 4000,
+  "recognition": "DirectHit",
+  "target": [
+   1130,
+   650
+  ]
+ },
+ "GC_CardPath_SwipeShelf": {
+  "action": "Swipe",
+  "begin": [
+   640,
+   533
+  ],
+  "desc": "卡带路径第 3 步：珍藏集货架上滑（参考 (640,533)->(640,267)＝设备 (960,800)->(960,400)，2026-11-03 手动实证一滑到位，战斗玩法行全露）。",
+  "duration": 800,
+  "end": [
+   640,
+   267
+  ],
+  "focus": "GC.卡带路径上滑货架",
+  "next": [
+   "GC_CardPath_FindGC"
+  ],
+  "on_error": [
+   "GC_Entry_Failed"
+  ],
+  "post_delay": 2000,
+  "recognition": "DirectHit"
+ },
+ "GC_Enter_FromHome": {
+  "action": "Click",
+  "desc": "主界面点「GOLDEN COLOSSEUM 返回战场」横幅直达竞技场（设备 (1390,974)->参考 (927,649)，2026-10-09 实机定案的第二入口）。首入无横幅时走珍藏集卡带路径（卡带设备 (1612,650)->(1075,433)，货架需先上滑、滚动后 (1612,420)->(1075,280)），该路径已由 fix/gc-entry-cardpath-20261103 实现（GC_CardPath_* 节点，模板 GC_Card_GoldenColosseum.png）。",
+  "expected": [
+   "GOLDEN"
+  ],
+  "focus": "GC.主界面横幅进竞技场",
+  "next": [
+   "GC_AtArena",
+   "GC_Enter_FromHome"
+  ],
+  "post_delay": 3000,
+  "recognition": "OCR",
+  "roi": [
+   760,
+   625,
+   340,
+   55
+  ],
+  "target": [
+   927,
+   649
+  ],
+  "timeout": 30000
+ },
+ "GC_Final_Verify": {
+  "desc": "收尾核对：竞技场主页右下入场计数（药丸左侧，参考约 (980-1040,587-603)）应为「0/100」量级（或与设定场次相符的余量）。2026-10-09 晚实测校准（原 roi 在右上角、位置错误）。",
+  "expected": [
+   "[0-9]+/100"
+  ],
+  "focus": "GC.终局对账入场计数",
+  "post_delay": 1000,
+  "recognition": "OCR",
+  "replace": [
+   [
+    "o",
+    "0"
+   ],
+   [
+    "O",
+    "0"
+   ],
+   [
+    " ",
+    ""
+   ]
+  ],
+  "roi": [
+   960,
+   575,
+   130,
+   45
+  ],
+  "timeout": 30000
+ },
+ "GC_HUD_Monitor": {
+  "desc": "监控分支（不阻塞主链、不点任何按钮，尤其不点右下「结束自动战斗」——2026-10-09 实测该钮+确认不可靠，截停靠 pipeline 外重启游戏）：识别战斗画面底部 HUD「正在进行N次中的第M次 · W胜L负 · 积分±X」（文案 2026-10-09 实机）。仿 PVP_AutoBattle_Battling（roi [50,576,203,69] expected 正在进行）。roi 为估算值（HUD 位于底部条），待实机标定。胜率阈值停机判定 TODO：M/N、W/L、积分的结构化解析走 agent 自定义识别（agent/recognition/ocr_score.py 先例），option 阈值 override 到该识别的 param，见 NOTES。",
+  "expected": [
+   "正在进行"
+  ],
+  "focus": "GC.连战进行中...",
+  "post_delay": 5000,
+  "recognition": "OCR",
+  "roi": [
+   40,
+   615,
+   560,
+   45
+  ]
+ },
+ "GC_LoopStart": {
+  "action": "Click",
+  "desc": "点对话框「战斗开始」启动连战。【2026-10-09 18:1x 定案】按钮下缘约 25px 是死区：中心点 (689,531)=设备(1034,796) 点击数十次全无效（脚本/手动/长按皆然），点上半部 (687,520)=设备(1030,780) 一次即启动——今早人工成功正因点位偏上。识别 DirectHit（按钮文本 OCR 回空框）；next 分支每轮先查晋级/HUD/结果，点中后 HUD 出现即被监控接管。",
+  "focus": "GC.连战开始",
+  "next": [
+   "[JumpBack]GC_Promotion_Detect",
+   "[JumpBack]GC_HUD_Monitor",
+   "GC_Result_Read",
+   "GC_LoopStart"
+  ],
+  "post_delay": 10000,
+  "recognition": "DirectHit",
+  "timeout": 900000,
+  "target": [
+   687,
+   520
+  ]
+ },
+ "GC_Promotion_Confirm": {
+  "action": "Click",
+  "desc": "晋级屏点「确认」（正常路径）。仿 PVP_PVPMes_Back（升降级点击确认，roi [614,642,49,35]）。确认钮实机位置：设备 (810,1024)->(540,683) 与 (960,1015)->(640,677) 两例，roi 取两例并集。楔死时点击无响应属已知故障（见 GC_Promotion_Detect），不在此节点内重试或恢复。",
+  "expected": [
+   "确认"
+  ],
+  "focus": "GC.晋级确认",
+  "next": [
+   "GC_Result_Read"
+  ],
+  "post_delay": 2000,
+  "post_wait_freezes": 500,
+  "recognition": "OCR",
+  "roi": [
+   520,
+   640,
+   220,
+   60
+  ],
+  "timeout": 10000,
+  "target": [
+   573,
+   668
+  ]
+ },
+ "GC_Promotion_Detect": {
+  "desc": "晋级屏识别（只识别，不做任何强制恢复）。晋级屏文案「恭喜晋级。」+段位名+胜利分（2026-10-09 实机：钻石I 1564、大师II 1700 两例）。roi 为估算值，待标定。注意：该屏偶发楔死输入（2026-10-09 两次实证，runbook 故障库 #12）——楔死时本节点组点确认无效，恢复动作（restartgame 重启）在 pipeline 外由盯跑方执行，本文件不实现任何强制恢复。",
+  "expected": [
+   "恭喜晋级",
+   "段位下滑"
+  ],
+  "focus": "GC.晋级屏出现",
+  "next": [
+   "GC_Promotion_Confirm"
+  ],
+  "recognition": "OCR",
+  "roi": [
+   480,
+   480,
+   320,
+   160
+  ]
+ },
+ "GC_Result_Read": {
+  "action": "Click",
+  "desc": "连战全部结束时出现「反复战斗结果」对话框：先确认其存在（统计文本会随 reco 明细进日志）；target 点右上 × 关对话框。roi 覆盖标题+统计行（2026-10-09 晚按实机迭代）。",
+  "expected": [
+   "反复战斗结果"
+  ],
+  "focus": "GC.反复战斗结果读数",
+  "next": [
+   "GC_Result_Close_V",
+   "GC_Result_Close_D"
+  ],
+  "post_delay": 2000,
+  "recognition": "OCR",
+  "roi": [
+   430,
+   160,
+   400,
+   120
+  ],
+  "target": [
+   807,
+   147
+  ]
+ },
+ "GC_SetCount_MAX": {
+  "action": "Click",
+  "desc": "在自动战斗对话框点 MAX 快捷键（设备 (1287,544)->参考 (858,363)，2026-10-09 实机 grounding），次数设为剩余全部。仿 PVP_AutoBattleMAX。固定场次模式由 option 的 pipeline_override 改 GC_SetCount_Verify 的 expected 与本节点 enabled，见 interface-patch.md。",
+  "expected": [
+   "MAX"
+  ],
+  "focus": "GC.次数设MAX",
+  "max_hit": 5,
+  "next": [
+   "GC_LoopStart"
+  ],
+  "post_delay": 1000,
+  "recognition": "OCR",
+  "roi": [
+   800,
+   340,
+   120,
+   45
+  ],
+  "target": [
+   833,
+   371
+  ],
+  "timeout": 5000,
+  "pre_delay": 2000
+ },
+ "GC_SetCount_Verify": {
+  "desc": "校验对话框显示「自动战斗N次」（2026-10-09 实机：MAX=剩余31次时显示 自动战斗31次）。默认（MAX 模式）只校验格式；固定场次 option 用 pipeline_override 把 expected 改成 ^自动战斗<场次>次$ 精确校验。自动跳过开关 ON 为账号持久设置，v1 不校验，TODO 见 NOTES。roi 据对话框中心（设备 (960,660)->(640,440)）标定，宽度估算。",
+  "expected": [
+   "自动战斗[0-9]+次"
+  ],
+  "focus": "GC.次数校验",
+  "next": [
+   "GC_LoopStart"
+  ],
+  "recognition": "OCR",
+  "replace": [
+   [
+    " ",
+    ""
+   ]
+  ],
+  "roi": [
+   540,
+   420,
+   220,
+   40
+  ],
+  "timeout": 30000
+ },
+ "GC_TaskStart": {
+  "desc": "黄金竞技场连战任务入口（分发节点）。仿 PVP_TaskStart：先试已在竞技场主页，次走全局复位到主界面，再走入口点击。实证出处：2026-10-08/09 手动与 MAX 连战全程。2026-11-01 补丁：timeout 5000→60000（入口链含 Global_ToHomePage 8000ms + GC_Enter_FromHome 30000ms + post_delay 3000，5000ms 预算必耗尽）；预算耗尽走 on_error 显性失败，不再落 Global_Null 假成功。见 grox2012/MFABD2#11。2026-11-03 卡带路径补丁：next 末尾追加 GC_CardPath_HallCart（横幅缺席时走珍藏集卡带路径）；timeout 60000→120000（覆盖横幅尝试＋卡带链）。",
+  "next": [
+   "GC_AtArena",
+   "GC_LeaveSettle_V",
+   "GC_LeaveSettle_D",
+   "GC_LeaveSettle_L",
+   "[JumpBack]Global_ToHomePage",
+   "GC_Enter_FromHome",
+   "GC_CardPath_HallCart"
+  ],
+  "on_error": [
+   "GC_Entry_Failed"
+  ],
+  "timeout": 120000
+ },
+ "GC_Entry_Failed": {
+  "action": "StopTask",
+  "desc": "[本地补丁] 黄金竞技场入口路由失败显性失败：GC_TaskStart 预算耗尽（入口链未走通）时命中，禁止 Global_Null 假成功（2026-10-30 三次点火 0 场却 ret=true）。仿 QuickHunt_LockedStage_Panic 显性失败范式。见 grox2012/MFABD2#11。",
+  "focus": "[color:red][WRN] 黄金竞技场入口失败（GC_TaskStart 预算耗尽），任务显性失败 [/color]",
+  "recognition": "DirectHit"
+ },
+ "GC_LeaveSettle_V": {
+  "recognition": "OCR",
+  "roi": [
+   820,
+   640,
+   200,
+   55
+  ],
+  "expected": [
+   "战斗"
+  ],
+  "action": "Click",
+  "target": [
+   1119,
+   663
+  ],
+  "post_delay": 3000,
+  "next": [
+   "GC_RankScreen_Dismiss",
+   "GC_AtArena"
+  ],
+  "focus": "GC.离开结算屏(胜)",
+  "desc": "胜利结算布局：药丸「战斗」为锚（OCR box [935,650]），点「离开」中心 (1119,663)（2026-10-09 全分辨率 grounding 定案；旧值 (1010,671) 落在两钮间死区，实测无效）。"
+ },
+ "GC_LeaveSettle_D": {
+  "recognition": "OCR",
+  "roi": [
+   560,
+   640,
+   200,
+   55
+  ],
+  "expected": [
+   "战斗"
+  ],
+  "action": "Click",
+  "target": [
+   763,
+   671
+  ],
+  "post_delay": 3000,
+  "next": [
+   "GC_RankScreen_Dismiss",
+   "GC_AtArena"
+  ],
+  "focus": "GC.离开结算屏(败)",
+  "desc": "败北结算布局：以药丸「战斗」为锚，点「离开」钮中心 (763,671) 回竞技场主页（2026-10-09 实机）。"
+ },
+ "GC_Result_Close_V": {
+  "recognition": "OCR",
+  "roi": [
+   820,
+   640,
+   200,
+   55
+  ],
+  "expected": [
+   "战斗"
+  ],
+  "action": "Click",
+  "target": [
+   1119,
+   663
+  ],
+  "post_delay": 3000,
+  "timeout": 30000,
+  "next": [
+   "GC_Promotion_Detect",
+   "GC_Final_Verify",
+   "GC_Result_Close_V"
+  ],
+  "focus": "GC.离开结算(V)",
+  "desc": "关闭结果对话框后在胜利结算屏点「离开」回竞技场主页（坐标经 2026-10-09 全分辨率定案）。"
+ },
+ "GC_Result_Close_D": {
+  "recognition": "OCR",
+  "roi": [
+   500,
+   640,
+   140,
+   60
+  ],
+  "expected": [
+   "战斗"
+  ],
+  "action": "Click",
+  "target": [
+   680,
+   673
+  ],
+  "post_delay": 3000,
+  "timeout": 30000,
+  "next": [
+   "GC_Promotion_Detect",
+   "GC_Final_Verify",
+   "GC_Result_Close_D"
+  ],
+  "focus": "GC.离开结算(D)",
+  "desc": "连战结尾 DEFEAT 结算屏点「离开」（布局与单场败北不同：整栏左移；药丸 ref 507-607、「离开」中心 (680,673)，2026-10-09 实测截图定案）。"
+ },
+ "GC_OpenDialog": {
+  "recognition": "OCR",
+  "roi": [
+   850,
+   590,
+   220,
+   100
+  ],
+  "expected": [
+   "自动战斗"
+  ],
+  "action": "Click",
+  "target": [
+   983,
+   630
+  ],
+  "post_delay": 3000,
+  "timeout": 30000,
+  "next": [
+   "GC_SetCount_MAX",
+   "GC_OpenDialog"
+  ],
+  "focus": "GC.打开自动战斗对话框",
+  "desc": "竞技场主页点右下 [xN] 药丸开「自动战斗」对话框（2026-10-09 实机定案：对话框是主页功能，入口=主页药丸 (1475,945) 设备；结算屏药丸则是「再来一场」按钮、点之直接开战，切勿混淆）。"
+ },
+ "GC_LeaveSettle_L": {
+  "recognition": "OCR",
+  "roi": [
+   500,
+   640,
+   140,
+   60
+  ],
+  "expected": [
+   "战斗"
+  ],
+  "action": "Click",
+  "target": [
+   680,
+   673
+  ],
+  "post_delay": 3000,
+  "next": [
+   "GC_RankScreen_Dismiss",
+   "GC_AtArena"
+  ],
+  "focus": "GC.离开结算屏(连战尾)",
+  "desc": "连战结尾结算布局（栏位左移）：以药丸「战斗」为锚点「离开」(680,673) 回竞技场主页。"
+ },
+ "GC_RankScreen_Dismiss": {
+  "recognition": "OCR",
+  "roi": [
+   430,
+   640,
+   290,
+   55
+  ],
+  "expected": [
+   "确认"
+  ],
+  "action": "Click",
+  "target": [
+   573,
+   668
+  ],
+  "timeout": 8000,
+  "post_delay": 2000,
+  "next": [
+   "GC_AtArena"
+  ],
+  "focus": "GC.段位屏确认",
+  "desc": "回主页途中弹出的段位变化屏（晋级/降级）消解：OCR「确认」锚 + 点按钮上半部中心 (573,668)（2026-10-09 实证：降级屏 (960,1006) 设备无效、(860,995) 有效）。无段位屏时 8 秒超时后由 next 兜底 AtArena。"
+ },
+ "GC_CardPath_SwipeTop1": {
+  "action": "Swipe",
+  "begin": [
+   640,
+   267
+  ],
+  "desc": "卡带路径第 2.1 步：货架下滑回顶（与上滑反向，顶端钳制无害；2026-11-03 第 3 轮教训：重开保留滚动位，不回顶则一滑过冲、真板出 roi）。",
+  "duration": 800,
+  "end": [
+   640,
+   533
+  ],
+  "focus": "GC.卡带路径下滑回顶",
+  "next": [
+   "GC_CardPath_SwipeTop2"
+  ],
+  "on_error": [
+   "GC_Entry_Failed"
+  ],
+  "post_delay": 2000,
+  "recognition": "DirectHit"
+ },
+ "GC_CardPath_SwipeTop2": {
+  "action": "Swipe",
+  "begin": [
+   640,
+   267
+  ],
+  "desc": "卡带路径第 2.2 步：货架下滑回顶（与上滑反向，顶端钳制无害；2026-11-03 第 3 轮教训：重开保留滚动位，不回顶则一滑过冲、真板出 roi）。",
+  "duration": 800,
+  "end": [
+   640,
+   533
+  ],
+  "focus": "GC.卡带路径下滑回顶",
+  "next": [
+   "GC_CardPath_SwipeTop3"
+  ],
+  "on_error": [
+   "GC_Entry_Failed"
+  ],
+  "post_delay": 2000,
+  "recognition": "DirectHit"
+ },
+ "GC_CardPath_SwipeTop3": {
+  "action": "Swipe",
+  "begin": [
+   640,
+   267
+  ],
+  "desc": "卡带路径第 2.3 步：货架下滑回顶（与上滑反向，顶端钳制无害；2026-11-03 第 3 轮教训：重开保留滚动位，不回顶则一滑过冲、真板出 roi）。",
+  "duration": 800,
+  "end": [
+   640,
+   533
+  ],
+  "focus": "GC.卡带路径下滑回顶",
+  "next": [
+   "GC_CardPath_SwipeShelf"
+  ],
+  "on_error": [
+   "GC_Entry_Failed"
+  ],
+  "post_delay": 2000,
+  "recognition": "DirectHit"
+ }
+}
