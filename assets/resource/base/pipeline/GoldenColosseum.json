@@ -13,13 +13,13 @@
   "timeout": 30000
  },
  "GC_CardPath_AtCollection": {
-  "desc": "卡带路径第 2 步：确认已到游戏卡珍藏集（顶栏标题 OCR）。2026-11-03 手动实证：大厅右下卡带图点按后到此页。",
+  "desc": "卡带路径第 2 步：确认已到游戏卡珍藏集（顶栏标题 OCR）。2026-11-03 手动实证：大厅右下卡带图点按后到此页。2026-11-03 第 3 轮教训：重开货架保留滚动位，须先下滑回顶再上滑；FindGC 阈值 0.94 防误板。",
   "expected": [
    "游戏卡珍藏集"
   ],
   "focus": "GC.卡带路径已到珍藏集",
   "next": [
-   "GC_CardPath_SwipeShelf",
+   "GC_CardPath_SwipeTop1",
    "GC_CardPath_AtCollection"
   ],
   "on_error": [
@@ -36,7 +36,7 @@
  },
  "GC_CardPath_FindGC": {
   "action": "Click",
-  "desc": "卡带路径第 4 步：模板匹配战斗玩法行黄金竞技场名签板（PvP 小签＋“黄金竞技场”全文，85×44，取自 1280×720 缩放帧，与赛季无关），点匹配中心进卡带载入。2026-11-03 手动实证：上滑后名签在位。",
+  "desc": "卡带路径第 4 步：模板匹配战斗玩法行黄金竞技场名签板（PvP 小签＋“黄金竞技场”全文，85×44，取自 1280×720 缩放帧，与赛季无关），点匹配中心进卡带载入。2026-11-03 手动实证：上滑后名签在位。2026-11-03 第 3 轮教训：阈值 0.94（误板最高 0.922663，真板同资产应近 0.99）；下滑回顶后上滑复现 01:40 态，真板在 roi 内。",
   "focus": "GC.卡带路径命中黄金竞技场卡",
   "next": [
    "GC_AtArena"
@@ -60,7 +60,8 @@
    -90,
    0,
    0
-  ]
+  ],
+  "threshold": 0.94
  },
  "GC_CardPath_HallCart": {
   "action": "Click",
@@ -500,5 +501,71 @@
   ],
   "focus": "GC.段位屏确认",
   "desc": "回主页途中弹出的段位变化屏（晋级/降级）消解：OCR「确认」锚 + 点按钮上半部中心 (573,668)（2026-10-09 实证：降级屏 (960,1006) 设备无效、(860,995) 有效）。无段位屏时 8 秒超时后由 next 兜底 AtArena。"
+ },
+ "GC_CardPath_SwipeTop1": {
+  "action": "Swipe",
+  "begin": [
+   640,
+   267
+  ],
+  "desc": "卡带路径第 2.1 步：货架下滑回顶（与上滑反向，顶端钳制无害；2026-11-03 第 3 轮教训：重开保留滚动位，不回顶则一滑过冲、真板出 roi）。",
+  "duration": 800,
+  "end": [
+   640,
+   533
+  ],
+  "focus": "GC.卡带路径下滑回顶",
+  "next": [
+   "GC_CardPath_SwipeTop2"
+  ],
+  "on_error": [
+   "GC_Entry_Failed"
+  ],
+  "post_delay": 2000,
+  "recognition": "DirectHit"
+ },
+ "GC_CardPath_SwipeTop2": {
+  "action": "Swipe",
+  "begin": [
+   640,
+   267
+  ],
+  "desc": "卡带路径第 2.2 步：货架下滑回顶（与上滑反向，顶端钳制无害；2026-11-03 第 3 轮教训：重开保留滚动位，不回顶则一滑过冲、真板出 roi）。",
+  "duration": 800,
+  "end": [
+   640,
+   533
+  ],
+  "focus": "GC.卡带路径下滑回顶",
+  "next": [
+   "GC_CardPath_SwipeTop3"
+  ],
+  "on_error": [
+   "GC_Entry_Failed"
+  ],
+  "post_delay": 2000,
+  "recognition": "DirectHit"
+ },
+ "GC_CardPath_SwipeTop3": {
+  "action": "Swipe",
+  "begin": [
+   640,
+   267
+  ],
+  "desc": "卡带路径第 2.3 步：货架下滑回顶（与上滑反向，顶端钳制无害；2026-11-03 第 3 轮教训：重开保留滚动位，不回顶则一滑过冲、真板出 roi）。",
+  "duration": 800,
+  "end": [
+   640,
+   533
+  ],
+  "focus": "GC.卡带路径下滑回顶",
+  "next": [
+   "GC_CardPath_SwipeShelf"
+  ],
+  "on_error": [
+   "GC_Entry_Failed"
+  ],
+  "post_delay": 2000,
+  "recognition": "DirectHit"
  }
 }
