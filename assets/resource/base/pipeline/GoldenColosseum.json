@@ -12,9 +12,92 @@
   "recognition": "And",
   "timeout": 30000
  },
+ "GC_CardPath_AtCollection": {
+  "desc": "卡带路径第 2 步：确认已到游戏卡珍藏集（顶栏标题 OCR）。2026-11-03 手动实证：大厅右下卡带图点按后到此页。",
+  "expected": [
+   "游戏卡珍藏集"
+  ],
+  "focus": "GC.卡带路径已到珍藏集",
+  "next": [
+   "GC_CardPath_SwipeShelf",
+   "GC_CardPath_AtCollection"
+  ],
+  "on_error": [
+   "GC_Entry_Failed"
+  ],
+  "post_delay": 1000,
+  "recognition": "OCR",
+  "roi": [
+   130,
+   20,
+   180,
+   40
+  ]
+ },
+ "GC_CardPath_FindGC": {
+  "action": "Click",
+  "desc": "卡带路径第 4 步：模板匹配战斗玩法行黄金竞技场名签板（PvP 小签＋“黄金竞技场”全文，85×44，取自 1280×720 缩放帧，与赛季无关），点匹配中心进卡带载入。2026-11-03 手动实证：上滑后名签在位。",
+  "focus": "GC.卡带路径命中黄金竞技场卡",
+  "next": [
+   "GC_AtArena"
+  ],
+  "on_error": [
+   "GC_Entry_Failed"
+  ],
+  "post_delay": 8000,
+  "recognition": "TemplateMatch",
+  "roi": [
+   40,
+   250,
+   1200,
+   210
+  ],
+  "template": [
+   "GC_Card_GoldenColosseum.png"
+  ]
+ },
+ "GC_CardPath_HallCart": {
+  "action": "Click",
+  "desc": "卡带路径第 1 步：大厅右下卡带 widget 位置点按（参考 (1130,650)＝设备 (1695,975)，2026-11-03 手动实证）。widget 内容可变（最近游玩卡），故 DirectHit 位置点按，到达由下一节点标题 OCR 验。",
+  "focus": "GC.卡带路径点大厅卡带",
+  "next": [
+   "GC_CardPath_AtCollection"
+  ],
+  "on_error": [
+   "GC_Entry_Failed"
+  ],
+  "post_delay": 4000,
+  "recognition": "DirectHit",
+  "target": [
+   1130,
+   650
+  ]
+ },
+ "GC_CardPath_SwipeShelf": {
+  "action": "Swipe",
+  "begin": [
+   640,
+   533
+  ],
+  "desc": "卡带路径第 3 步：珍藏集货架上滑（参考 (640,533)->(640,267)＝设备 (960,800)->(960,400)，2026-11-03 手动实证一滑到位，战斗玩法行全露）。",
+  "duration": 800,
+  "end": [
+   640,
+   267
+  ],
+  "focus": "GC.卡带路径上滑货架",
+  "next": [
+   "GC_CardPath_FindGC"
+  ],
+  "on_error": [
+   "GC_Entry_Failed"
+  ],
+  "post_delay": 2000,
+  "recognition": "DirectHit"
+ },
  "GC_Enter_FromHome": {
   "action": "Click",
-  "desc": "主界面点「GOLDEN COLOSSEUM 返回战场」横幅直达竞技场（设备 (1390,974)->参考 (927,649)，2026-10-09 实机定案的第二入口）。首入无横幅时走珍藏集卡带路径（卡带设备 (1612,650)->(1075,433)，货架需先上滑、滚动后 (1612,420)->(1075,280)），该路径需模板图，v1 未含，见 NOTES TODO。",
+  "desc": "主界面点「GOLDEN COLOSSEUM 返回战场」横幅直达竞技场（设备 (1390,974)->参考 (927,649)，2026-10-09 实机定案的第二入口）。首入无横幅时走珍藏集卡带路径（卡带设备 (1612,650)->(1075,433)，货架需先上滑、滚动后 (1612,420)->(1075,280)），该路径已由 fix/gc-entry-cardpath-20261103 实现（GC_CardPath_* 节点，模板 GC_Card_GoldenColosseum.png）。",
   "expected": [
    "GOLDEN"
   ],
@@ -218,19 +301,20 @@
   "timeout": 30000
  },
  "GC_TaskStart": {
-  "desc": "黄金竞技场连战任务入口（分发节点）。仿 PVP_TaskStart：先试已在竞技场主页，次走全局复位到主界面，再走入口点击。实证出处：2026-10-08/09 手动与 MAX 连战全程。2026-11-01 补丁：timeout 5000→60000（入口链含 Global_ToHomePage 8000ms + GC_Enter_FromHome 30000ms + post_delay 3000，5000ms 预算必耗尽）；预算耗尽走 on_error 显性失败，不再落 Global_Null 假成功。见 grox2012/MFABD2#11。",
+  "desc": "黄金竞技场连战任务入口（分发节点）。仿 PVP_TaskStart：先试已在竞技场主页，次走全局复位到主界面，再走入口点击。实证出处：2026-10-08/09 手动与 MAX 连战全程。2026-11-01 补丁：timeout 5000→60000（入口链含 Global_ToHomePage 8000ms + GC_Enter_FromHome 30000ms + post_delay 3000，5000ms 预算必耗尽）；预算耗尽走 on_error 显性失败，不再落 Global_Null 假成功。见 grox2012/MFABD2#11。2026-11-03 卡带路径补丁：next 末尾追加 GC_CardPath_HallCart（横幅缺席时走珍藏集卡带路径）；timeout 60000→120000（覆盖横幅尝试＋卡带链）。",
   "next": [
    "GC_AtArena",
    "GC_LeaveSettle_V",
    "GC_LeaveSettle_D",
    "GC_LeaveSettle_L",
    "[JumpBack]Global_ToHomePage",
-   "GC_Enter_FromHome"
+   "GC_Enter_FromHome",
+   "GC_CardPath_HallCart"
   ],
   "on_error": [
    "GC_Entry_Failed"
   ],
-  "timeout": 60000
+  "timeout": 120000
  },
  "GC_Entry_Failed": {
   "action": "StopTask",
