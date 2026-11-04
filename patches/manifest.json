@@ -645,6 +645,34 @@
       ],
       "verify": "离线结构测试通过（fork 与本机资源双文件，2026-10-31 夜）；实战首验待实例空闲（Solver (a) 与局 2 优先），须走到谈心段且见 Unfinished 出口或正常 Exhausted 出口才算验证。",
       "retire_when": "上游为谈心段提供全名册轮转完成判定（或剩余次数 >0 时不打标的出口语义），且实机验证通过。"
+    },
+    {
+      "id": "daily-intimacy-greedy-20261103",
+      "title": "谈心贪心扫描修复：翻页交错 + 快速谈心兜底",
+      "kind": "shared-fix",
+      "status": "active",
+      "introduced": "2026-11-03",
+      "issue": "#544",
+      "intent": "根因：Swip 在 CatalogCard next 末位、被 Switch_Turn（Turn<100 恒命中）全程遮蔽而结构上不可达，轮转永不翻页、只覆盖首屏约 6 行，首屏外可谈对象永不可达，Turn 空烧至 100。修复：目录评估次序插入翻页闸（每 6 步下一位触发滑屏，步数与 Turn 预算分离，翻页不复位 Turn，滑不动走 fail-closed）；普通谈心钮静默（Up_MSG 超时）后走快速谈心兜底（快速谈只给基础经验、不进剧情记录），快速钮亦静默则前进。正常完成路径、Exhausted/End、Up 判据、其它任务段未动。",
+      "files": [
+        "Daily.json"
+      ],
+      "applied_markers": [
+        "Daily_Intimacy_CatalogCard.next 含 Daily_Intimacy_Scroll_Ck",
+        "Daily_Intimacy_Up_MSG.on_error 含 Daily_Intimacy_FastTalk",
+        "Daily_Intimacy_Swip_Page 在位"
+      ],
+      "edits": [
+        "CatalogCard.next：Up 之后、Switch_Turn 之前插入 Scroll_Ck",
+        "Switch_Turn.next：Turn_NextPerson → Scroll_Inc",
+        "Up_MSG：新增 timeout 15000 与 on_error FastTalk",
+        "新增 7 节点：Scroll_Inc、Scroll_Ck、Swip_Page、Scroll_Reset、FastTalk、FastTalk_Ck、FastTalk_Done"
+      ],
+      "verify": [
+        "离线：tools/talkfix_greedy_test.py 全绿（结构 S1-S12 + 逻辑 C1-C7，含全员耗尽+剩余>0→未完成、剩余=0→正常完成）",
+        "实战首验待补：有剩余次数的日常段、首屏下可谈者翻页命中、普通死钮+快速可用兜底、到底 fail-closed、正常完成路径不受影响"
+      ],
+      "retire_when": "上游谈心段原生支持翻页/快速谈路径且实战验证通过时退役"
     }
   ]
 }

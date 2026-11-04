@@ -1206,6 +1206,7 @@
             "[JumpBack]Daily_Intimacy_Switch_Set",
             "Daily_Intimacy_Exhausted",
             "[JumpBack]Daily_Intimacy_Up",
+            "Daily_Intimacy_Scroll_Ck",
             "[JumpBack]Daily_Intimacy_Switch_Turn",
             "Daily_Intimacy_AllCapped_CkSet",
             "Daily_Intimacy_Swip"
@@ -1274,7 +1275,7 @@
             "tag": "Intimacy_Switch_Turn",
             "value": 1
         },
-        "next": ["Daily_Intimacy_Turn_NextPerson"]
+        "next": ["Daily_Intimacy_Scroll_Inc"]
     },
     "Daily_Intimacy_Set_FirstPerson": {
         "desc": "设定第一位人员左边",
@@ -1358,6 +1359,8 @@
         "expected": "确认",
         "action": "Click",
         "post_delay": 1000,
+        "timeout": 15000,
+        "on_error": ["Daily_Intimacy_FastTalk"],
         "next": [
             "Daily_Intimacy_Talk_Enter",
             "Daily_Intimacy_Up_MSG"
@@ -1520,5 +1523,129 @@
             ]
         },
         "next": ["Daily_Intimacy_CatalogCard"]
+    }
+,
+    "Daily_Intimacy_Scroll_Inc": {
+        "desc": "[本地补丁] 谈心翻页计数：每次“下一位”后翻页步数 +1，满 6 步触发翻页。见 patches/manifest.json#daily-intimacy-greedy-20261103",
+        "action": "Custom",
+        "custom_action": "UpdateTag",
+        "custom_action_param": {
+            "tag": "Intimacy_Scroll_Step",
+            "value": 1
+        },
+        "next": ["Daily_Intimacy_Turn_NextPerson"]
+    },
+    "Daily_Intimacy_Scroll_Ck": {
+        "desc": "[本地补丁] 谈心翻页闸：翻页步数达 6（当前页约一屏已走完）且未谈成时触发翻页，不再烧满 100 转空点。见 patches/manifest.json#daily-intimacy-greedy-20261103",
+        "recognition": "Custom",
+        "custom_recognition": "CheckTag",
+        "custom_recognition_param": {
+            "tag": "Intimacy_Scroll_Step",
+            "max": 6
+        },
+        "inverse": true,
+        "next": ["Daily_Intimacy_Swip_Page"]
+    },
+    "Daily_Intimacy_Scroll_Reset": {
+        "desc": "[本地补丁] 谈心翻页复位：只复位 Set 闸与翻页步数（不复位 Turn 总预算），下一轮重锚首位继续走。见 patches/manifest.json#daily-intimacy-greedy-20261103",
+        "action": "Custom",
+        "custom_action": "ResetTag",
+        "custom_action_param": {
+            "tags": [
+                "Intimacy_Switch_Set",
+                "Intimacy_Scroll_Step"
+            ]
+        },
+        "next": ["Daily_Intimacy_CatalogCard"]
+    },
+    "Daily_Intimacy_FastTalk": {
+        "desc": "[本地补丁] 快速谈心兜底：普通谈心确认窗超时未出（普通钮静默）时改点快速谈心钮；快速谈只给基础经验、不进剧情记录。见 patches/manifest.json#daily-intimacy-greedy-20261103",
+        "recognition": "OCR",
+        "roi": [
+            1047,
+            631,
+            119,
+            36
+        ],
+        "expected": "快速谈心",
+        "action": "Click",
+        "post_delay": 1000,
+        "next": ["Daily_Intimacy_FastTalk_Ck"],
+        "on_error": ["Daily_Intimacy_Switch_Turn"]
+    },
+    "Daily_Intimacy_FastTalk_Ck": {
+        "desc": "[本地补丁] 快速谈心确认窗：点确认进入快速谈结算；超时未出（快速钮亦静默）时视为该对象不可谈，前进下一位。见 patches/manifest.json#daily-intimacy-greedy-20261103",
+        "recognition": "OCR",
+        "roi": [
+            662,
+            405,
+            118,
+            118
+        ],
+        "expected": "确认",
+        "action": "Click",
+        "post_delay": 1000,
+        "timeout": 15000,
+        "next": ["Daily_Intimacy_FastTalk_Done"],
+        "on_error": ["Daily_Intimacy_Switch_Turn"]
+    },
+    "Daily_Intimacy_FastTalk_Done": {
+        "desc": "[本地补丁] 快速谈结算等待：等目录头复现（结算完成）后经翻页计数前进下一位；超时未复现亦前进（不挂死）。目录重估时 Exhausted 照常检查归零。见 patches/manifest.json#daily-intimacy-greedy-20261103",
+        "recognition": "OCR",
+        "roi": [
+            218,
+            62,
+            95,
+            27
+        ],
+        "expected": "亲密度增益",
+        "only_rec": true,
+        "pre_delay": 5000,
+        "timeout": 30000,
+        "next": ["Daily_Intimacy_Scroll_Inc"],
+        "on_error": ["Daily_Intimacy_Switch_Turn"]
+    },
+    "Daily_Intimacy_Swip_Page": {
+        "desc": "[本地补丁] 谈心翻页：上滑一屏切到下一页名册；滑不动（已到底）时走 fail-closed 未完成出口，不打标完成。见 patches/manifest.json#daily-intimacy-greedy-20261103",
+        "max_hit": 3,
+        "recognition": "OCR",
+        "roi": [
+            85,
+            591,
+            92,
+            88
+        ],
+        "expected": ["^[a-zA-Z\u4e00-\u9fa5]+$"],
+        "action": "Custom",
+        "custom_action": "SmartSwipe",
+        "custom_action_param": {
+            "proxy_node": "Custom_Proxy_Swipe",
+            "action": "Swipe",
+            "begin": [
+                129,
+                615,
+                1,
+                1
+            ],
+            "end": [
+                129,
+                188,
+                1,
+                1
+            ],
+            "detect_roi": [
+                116,
+                612,
+                26,
+                25
+            ],
+            "duration": 800,
+            "end_hold": 1000,
+            "settle_delay": 500,
+            "retry_times": 2,
+            "threshold": 5.0
+        },
+        "next": ["Daily_Intimacy_Scroll_Reset"],
+        "on_error": ["Daily_Intimacy_AllCapped_Unfinished"]
     }
 }
