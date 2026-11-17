@@ -629,17 +629,19 @@
       "edits": [
         {
           "file": "EventBattle.json",
-          "type": "replace",
+          "type": "node_replace",
+          "node": "Event_Mamono_Hub",
           "count": 1,
-          "anchor": "        \"desc\": \"赛季魔兽讨伐jb1入口。enabled是interface的抓手;有意不加存档闸——收尾链(Even_MamonoFollowUp_onSubMain)与SeasonEvent_ReMamono_Hub完全共用,打标区分不开是谁做完的\",\n        \"enabled\": true,",
-          "replacement": "        \"desc\": \"赛季魔兽讨伐jb1入口。enabled是interface的抓手;有意不加存档闸——收尾链(Even_MamonoFollowUp_onSubMain)与SeasonEvent_ReMamono_Hub完全共用,打标区分不开是谁做完的\",\n        \"enabled\": false,"
+          "anchor": "\"enabled\": true,",
+          "replacement": "\"enabled\": false,"
         },
         {
           "file": "EventBattle.json",
-          "type": "replace",
+          "type": "node_replace",
+          "node": "SeasonEvent_ReMamono_Hub",
           "count": 1,
-          "anchor": "        \"desc\": \"检测回归魔兽,在mini后运行,前者天然地回到了主页面。enabled是interface的抓手;有意不加存档闸——收尾链与Event_Mamono_Hub共用\",\n        \"enabled\": true,",
-          "replacement": "        \"desc\": \"检测回归魔兽,在mini后运行,前者天然地回到了主页面。enabled是interface的抓手;有意不加存档闸——收尾链与Event_Mamono_Hub共用\",\n        \"enabled\": false,"
+          "anchor": "\"enabled\": true,",
+          "replacement": "\"enabled\": false,"
         },
         {
           "file": "EventBattle.json",
