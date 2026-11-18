@@ -651,7 +651,7 @@
           "replacement": "            \"Even_MamonoFollowUp_MamonoEnter\"\n        ],\n        \"action\": \"Click\",\n        \"max_hit\": 3,"
         }
       ],
-      "verify": "UNVERIFIED（2026-10-16 诊断完成、过督导第一关；部署窗口另定，部署后按 issue #9 的 solo 方案验证：默认全扇出单跑赛季任务自完成、魔兽界面确认打开与 EM.EM.等级下调 grep 双 0、其余子段轨迹同序、回主页、≤10 分钟）。",
+      "verify": "UNVERIFIED（2026-10-16 诊断完成、过督导第一关；2026-11-16 锚点修正：PR 原版 edits 1-2 以 desc 行锚定，实装树因上游已删两 Hub 的 desc 行而 CONFLICT，改 node_replace 以节点内 enabled 行为锚（§6 避开 desc 行），离线自测重跑通过；部署后按 issue #9 的 solo 方案验证：默认全扇出单跑赛季任务自完成、魔兽界面确认打开与 EM.EM.等级下调 grep 双 0、其余子段轨迹同序、回主页、≤10 分钟）。",
       "retire_when": "上游摘除或重构魔兽子段等级链，或赛季魔兽页恢复数字等级 UI 且子段实机验证通过。"
     }
   ]
