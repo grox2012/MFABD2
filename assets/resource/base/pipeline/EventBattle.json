@@ -81,7 +81,7 @@
     },
     "Event_Mamono_Hub": {
         "desc": "赛季魔兽讨伐jb1入口。enabled是interface的抓手;有意不加存档闸——收尾链(Even_MamonoFollowUp_onSubMain)与SeasonEvent_ReMamono_Hub完全共用,打标区分不开是谁做完的",
-        "enabled": true,
+        "enabled": false,
         "max_hit": 1,
         "next": [
             "SeasonEvent_Mamono_Start",
@@ -117,7 +117,7 @@
     },
     "SeasonEvent_ReMamono_Hub": {
         "desc": "检测回归魔兽,在mini后运行,前者天然地回到了主页面。enabled是interface的抓手;有意不加存档闸——收尾链与Event_Mamono_Hub共用",
-        "enabled": true,
+        "enabled": false,
         "max_hit": 1,
         "next": [
             "SeasonEvent_ReMamono_Start",
@@ -281,10 +281,10 @@
         "desc": "判定，处于一般/挑战 战斗页面",
         "recognition": "OCR",
         "roi": [
-            626,
-            235,
-            189,
-            54
+            620,
+            230,
+            490,
+            200
         ],
         "expected": [
             "在战斗中获胜"
@@ -1269,6 +1269,7 @@
             "Even_MamonoFollowUp_MamonoEnter"
         ],
         "action": "Click",
+        "max_hit": 3,
         "target": [
             851,
             113
